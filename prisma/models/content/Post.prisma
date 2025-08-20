@@ -1,0 +1,101 @@
+// Post content model
+model Post {
+  id          Int         @id @default(autoincrement())
+  title       String
+  slug        String      @unique // URL-friendly version of title
+  content     String?
+  excerpt     String?     // Short description
+  coverImage  String?     // Cover image URL
+  published   Boolean     @default(false)
+  status      PostStatus  @default(DRAFT)
+  viewCount   Int         @default(0)
+  
+  // SEO fields
+  metaTitle       String?
+  metaDescription String?
+  
+  // Relations
+  author      User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId    Int
+  categories  PostCategory[]
+  tags        PostTag[]
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  publishedAt DateTime?
+
+  @@index([authorId])
+  @@index([published])
+  @@index([status])
+  @@index([slug])
+  @@map("posts")
+}
+
+// Post status enum
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  DELETED
+}
+
+// Categories for posts
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  color       String?  // Hex color code
+  
+  // Relations
+  posts       PostCategory[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("categories")
+}
+
+// Tags for posts
+model Tag {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  slug      String   @unique
+  color     String?  // Hex color code
+  
+  // Relations
+  posts     PostTag[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("tags")
+}
+
+// Many-to-many relationship between posts and categories
+model PostCategory {
+  id         Int      @id @default(autoincrement())
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId     Int
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId Int
+  
+  createdAt  DateTime @default(now())
+
+  @@unique([postId, categoryId])
+  @@map("post_categories")
+}
+
+// Many-to-many relationship between posts and tags
+model PostTag {
+  id        Int      @id @default(autoincrement())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    Int
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId     Int
+  
+  createdAt DateTime @default(now())
+
+  @@unique([postId, tagId])
+  @@map("post_tags")
+}
