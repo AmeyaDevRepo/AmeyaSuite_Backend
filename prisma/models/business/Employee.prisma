@@ -1,0 +1,58 @@
+// Employee profile within a company
+model Employee {
+  id            String   @id @default(cuid())
+  employeeId    String   // Company-specific employee ID
+  
+  // Personal Information
+  firstName     String
+  lastName      String
+  email         String
+  phone         String?
+  dateOfBirth   DateTime?
+  gender        Gender?
+  maritalStatus MaritalStatus?
+  
+  // Address
+  address       String?
+  city          String?
+  state         String?
+  country       String?
+  zipCode       String?
+  
+  // Employment Details
+  position      String   // Job title
+  hireDate      DateTime
+  employmentType EmploymentType @default(FULL_TIME)
+  workLocation  WorkLocation @default(OFFICE)
+  salary        Decimal? @db.Decimal(10, 2)
+  currency      String?  @default("USD")
+  
+  // Work Information
+  manager       Employee? @relation("EmployeeManager", fields: [managerId], references: [id])
+  managerId     String?
+  directReports Employee[] @relation("EmployeeManager")
+  
+  // Relations
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId     String
+  department    Department? @relation(fields: [departmentId], references: [id])
+  departmentId  String?
+  companyUser   CompanyUser? @relation(fields: [companyUserId], references: [id])
+  companyUserId String? @unique
+  
+  // Attendance and Leave
+  attendanceRecords AttendanceRecord[]
+  leaveRequests     LeaveRequest[]
+  
+  // Status
+  status        EmployeeStatus @default(ACTIVE)
+  terminationDate DateTime?
+  terminationReason String?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@unique([companyId, employeeId])
+  @@unique([companyId, email])
+  @@map("employees")
+}

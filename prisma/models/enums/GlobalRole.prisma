@@ -1,0 +1,5 @@
+// Global roles for system-wide permissions
+enum GlobalRole {
+  SUPER_ADMIN // Can access all companies and system settings
+  USER        // Regular user who can be invited to companies
+}

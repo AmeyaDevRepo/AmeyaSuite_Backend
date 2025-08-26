@@ -1,0 +1,12 @@
+// Attendance status enum
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  HALF_DAY
+  SICK_LEAVE
+  CASUAL_LEAVE
+  VACATION
+  HOLIDAY
+  WORK_FROM_HOME
+}
