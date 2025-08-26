@@ -17,10 +17,10 @@
     "prisma:seed": "ts-node --transpile-only prisma/seed.ts",
     "prisma:reset": "prisma migrate reset",
     "db:push": "prisma db push",
-  "models:generate": "echo Deprecated: models-manager removed",
-  "models:list": "echo Deprecated: models-manager removed",
-  "models:create": "echo Deprecated: models-manager removed",
-  "models:validate": "echo Deprecated: models-manager removed"
+    "models:generate": "echo Deprecated: models-manager removed",
+    "models:list": "echo Deprecated: models-manager removed",
+    "models:create": "echo Deprecated: models-manager removed",
+    "models:validate": "echo Deprecated: models-manager removed"
   },
   "dependencies": {
     "@nestjs/cache-manager": "^3.0.1",
