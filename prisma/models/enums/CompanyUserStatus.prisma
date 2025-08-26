@@ -1,0 +1,7 @@
+// Status of user in a company
+enum CompanyUserStatus {
+  PENDING   // Invitation sent but not accepted
+  ACTIVE    // User is active in the company
+  SUSPENDED // User is temporarily suspended
+  INACTIVE  // User left or was removed
+}

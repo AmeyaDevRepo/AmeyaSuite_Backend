@@ -1,0 +1,6 @@
+// Work location enum
+enum WorkLocation {
+  OFFICE
+  REMOTE
+  HYBRID
+}

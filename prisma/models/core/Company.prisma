@@ -1,0 +1,38 @@
+// Company/Tenant model for multi-tenancy
+model Company {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique // URL-friendly company identifier
+  domain      String?  @unique // Custom domain for the company
+  logo        String?  // Company logo URL
+  website     String?
+  phone       String?
+  email       String?
+  address     String?
+  city        String?
+  state       String?
+  country     String?
+  zipCode     String?
+  
+  // Subscription details
+  subscriptionPlan    String?   // Basic, Pro, Enterprise
+  subscriptionStatus  String    @default("TRIAL") // TRIAL, ACTIVE, SUSPENDED, CANCELLED
+  subscriptionEndsAt  DateTime?
+  maxUsers           Int       @default(10)
+  
+  // Settings
+  isActive    Boolean  @default(true)
+  settings    Json?    // Company-specific settings
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  companyUsers     CompanyUser[]
+  companyRoles     CompanyRole[]
+  departments      Department[]
+  employees        Employee[]
+  attendanceRecords AttendanceRecord[]
+  
+  @@map("companies")
+}

@@ -1,0 +1,21 @@
+// User roles within a company (many-to-many)
+model UserCompanyRole {
+  id        String   @id @default(cuid())
+  
+  // Relations
+  companyUser    CompanyUser @relation(fields: [companyUserId], references: [id], onDelete: Cascade)
+  companyUserId  String
+  companyRole    CompanyRole @relation(fields: [companyRoleId], references: [id], onDelete: Cascade)
+  companyRoleId  String
+  
+  // Assignment details
+  assignedBy String   // User ID who assigned this role
+  assignedAt DateTime @default(now())
+  expiresAt  DateTime? // Optional expiration date for temporary roles
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  @@unique([companyUserId, companyRoleId])
+  @@map("user_company_roles")
+}
