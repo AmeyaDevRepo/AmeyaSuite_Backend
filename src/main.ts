@@ -1,8 +1,10 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { SessionAuthGuard } from './auth/session-auth.guard';
 import session = require('express-session');
 import { PrismaService } from './prisma/prisma.service';
+import { sanitizeUser } from './auth/sanitize-user.util';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -43,6 +45,27 @@ async function bootstrap() {
 
   const prismaService = app.get(PrismaService);
   prismaService.enableShutdownHooks(app as any);
+
+  // Middleware to hydrate req.user from session (before guards)
+  app.use(async (req: any, _res, next) => {
+    try {
+      if (req.session?.user) {
+        req.user = req.session.user;
+      } else if (req.session?.userId) {
+        const u = await prismaService.user.findUnique({ where: { id: req.session.userId } });
+        if (u) {
+          const safe = sanitizeUser(u);
+          req.user = safe;
+          req.session.user = safe;
+        }
+      }
+    } catch (e) {
+      // swallow errors to not break request pipeline
+    }
+    next();
+  });
+
+  app.useGlobalGuards(new SessionAuthGuard());
 
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
   console.log(`Application is running on: http://localhost:${process.env.PORT ?? 3000}`);

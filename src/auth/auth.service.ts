@@ -65,10 +65,9 @@ export class AuthService {
         }
     }
 
-    async getUserById(id: number | string) {
+    async getUserById(id: string) {
         try {
-            const parsedId = typeof id === 'string' ? parseInt(id, 10) : id;
-            const user = await this.prisma.user.findUnique({ where: { id: parsedId } as any });
+            const user = await this.prisma.user.findUnique({ where: { id } });
             return sanitizeUser(user);
         } catch (e: any) {
             this.logger.error('getUserById failed', e?.stack || e);
