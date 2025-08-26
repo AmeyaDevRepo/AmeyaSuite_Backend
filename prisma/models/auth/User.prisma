@@ -6,6 +6,7 @@ model User {
   
   // Profile information
   firstName String?
+  middleName String?
   lastName  String?
   avatar    String?
   
