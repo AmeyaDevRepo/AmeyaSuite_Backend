@@ -9,20 +9,39 @@ export class SessionController {
     private readonly cacheExampleService: CacheExampleService
   ) {}
 
+  /**
+   * Legacy endpoint: still accepts body.key. Prefer using /session/set/:key
+   */
   @Post('set')
-  async setSessionData(
+  async setSessionDataLegacy(
     @Session() session: Record<string, any>,
     @Body() body: { key: string; value: any }
   ) {
-    // Store in express-session
+    if (!body?.key) {
+      return { success: false, message: 'Missing key. Use POST /session/set/:key instead.' };
+    }
     session[body.key] = body.value;
-    
-    // Also store in cache if session ID is available
     if (session.id) {
       await this.sessionService.setSessionData(session.id, body.key, body.value);
     }
-    
-    return { success: true, message: 'Session data set successfully' };
+    return { success: true, message: 'Session data set (legacy).' };
+  }
+
+  /**
+   * New preferred endpoint: key comes from URL path param.
+   * POST /session/set/theme  { value: 'dark' }
+   */
+  @Post('set/:key')
+  async setSessionData(
+    @Session() session: Record<string, any>,
+    @Param('key') key: string,
+    @Body() body: { value: any }
+  ) {
+    session[key] = body.value;
+    if (session.id) {
+      await this.sessionService.setSessionData(session.id, key, body.value);
+    }
+    return { success: true, key, value: body.value, message: 'Session data set successfully' };
   }
 
   @Get('get/:key')
@@ -67,10 +86,24 @@ export class SessionController {
   }
 
   // Cache management endpoints
+  // Legacy cache set (still supported)
   @Post('cache/set')
-  async setCacheData(@Body() body: { key: string; value: any; ttl?: number }) {
+  async setCacheDataLegacy(@Body() body: { key: string; value: any; ttl?: number }) {
+    if (!body?.key) {
+      return { success: false, message: 'Missing key. Use POST /session/cache/set/:key instead.' };
+    }
     await this.sessionService.setCacheData(body.key, body.value, body.ttl);
-    return { success: true, message: 'Cache data set successfully' };
+    return { success: true, key: body.key, value: body.value, ttl: body.ttl ?? null, message: 'Cache data set (legacy).' };
+  }
+
+  // Preferred cache set with URL key
+  @Post('cache/set/:key')
+  async setCacheData(
+    @Param('key') key: string,
+    @Body() body: { value: any; ttl?: number }
+  ) {
+    await this.sessionService.setCacheData(key, body.value, body.ttl);
+    return { success: true, key, value: body.value, ttl: body.ttl ?? null, message: 'Cache data set successfully' };
   }
 
   @Get('cache/get/:key')
