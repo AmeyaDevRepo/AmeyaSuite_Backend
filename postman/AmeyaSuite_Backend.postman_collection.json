@@ -1,0 +1,95 @@
+{
+  "info": {
+    "name": "AmeyaSuite Backend API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "d5f7c9ba-0000-4e89-a111-auth-main"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Signup",
+            "request": {
+              "method": "POST",
+              "header": [
+                {"key": "Content-Type", "value": "application/json"}
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"email\": \"user1@example.com\",\n  \"password\": \"Password123!\",\n  \"firstName\": \"User\",\n  \"lastName\": \"One\"\n}"
+              },
+              "url": {
+                "raw": "{{baseUrl}}/auth/signup",
+                "host": ["{{baseUrl}}"],
+                "path": ["auth", "signup"]
+              }
+            },
+            "response": []
+        },
+        {
+          "name": "Login",
+            "request": {
+              "method": "POST",
+              "header": [
+                {"key": "Content-Type", "value": "application/json"}
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"email\": \"user1@example.com\",\n  \"password\": \"Password123!\"\n}"
+              },
+              "url": {
+                "raw": "{{baseUrl}}/auth/login",
+                "host": ["{{baseUrl}}"],
+                "path": ["auth", "login"]
+              }
+            },
+            "response": []
+        },
+        {
+          "name": "Me (Current User)",
+            "request": {
+              "method": "GET",
+              "header": [
+                {"key": "Content-Type", "value": "application/json"}
+              ],
+              "url": {
+                "raw": "{{baseUrl}}/auth/me",
+                "host": ["{{baseUrl}}"],
+                "path": ["auth", "me"]
+              }
+            },
+            "response": []
+        },
+        {
+          "name": "Logout",
+            "request": {
+              "method": "POST",
+              "header": [
+                {"key": "Content-Type", "value": "application/json"}
+              ],
+              "url": {
+                "raw": "{{baseUrl}}/auth/logout",
+                "host": ["{{baseUrl}}"],
+                "path": ["auth", "logout"]
+              }
+            },
+            "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {"exec": [""], "type": "text/javascript"}
+    },
+    {
+      "listen": "test",
+      "script": {"exec": [""], "type": "text/javascript"}
+    }
+  ],
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:3000"}
+  ]
+}

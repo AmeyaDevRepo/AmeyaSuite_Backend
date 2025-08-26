@@ -1,0 +1,29 @@
+// Many-to-many relationship between company users and companies
+model CompanyUser {
+  id        String   @id @default(cuid())
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId String
+  
+  // Status
+  status    CompanyUserStatus @default(PENDING)
+  isActive  Boolean  @default(true)
+  
+  // Invitation details
+  invitedBy String?  // User ID who invited this user
+  invitedAt DateTime @default(now())
+  joinedAt  DateTime?
+  
+  // Relations
+  roles     UserCompanyRole[]
+  employee  Employee? // Link to employee profile if applicable
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([userId, companyId])
+  @@map("company_users")
+}

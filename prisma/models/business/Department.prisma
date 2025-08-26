@@ -1,0 +1,28 @@
+// Department model for company organization
+model Department {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  code        String?  // Department code like "IT", "HR", "FIN"
+  
+  // Hierarchy
+  parentId    String?
+  parent      Department? @relation("DepartmentHierarchy", fields: [parentId], references: [id])
+  children    Department[] @relation("DepartmentHierarchy")
+  
+  // Department head
+  headId      String?  // Employee ID who heads this department
+  
+  // Relations
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   String
+  employees   Employee[]
+  
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([companyId, name])
+  @@unique([companyId, code])
+  @@map("departments")
+}

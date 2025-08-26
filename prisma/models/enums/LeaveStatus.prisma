@@ -1,0 +1,7 @@
+// Leave status enum
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
