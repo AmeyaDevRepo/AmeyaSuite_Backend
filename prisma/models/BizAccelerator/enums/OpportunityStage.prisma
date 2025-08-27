@@ -1,0 +1,8 @@
+enum OpportunityStage {
+  NEW_QUALIFIED
+  DISCOVERY
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}

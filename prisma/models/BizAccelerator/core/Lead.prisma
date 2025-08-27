@@ -1,0 +1,77 @@
+model Lead {
+  id              String      @id @default(cuid())
+  
+  // Basic Information
+  firstName       String?
+  lastName        String?
+  fullName        String      // Computed or provided full name
+  email           String?
+  phone           String?
+  
+  // Company Information
+  companyName     String?
+  jobTitle        String?
+  companySize     String?     // Small, Medium, Large, Enterprise
+  industry        String?
+  
+  // Lead Classification
+  leadType        LeadType    @default(COLD)
+  status          LeadStatus  @default(NEW)
+  source          LeadSource  @default(OTHER)
+  
+  // Qualification Information
+  budget          Decimal?    @db.Decimal(12, 2)
+  currency        String?     @default("USD")
+  timeline        String?     // When they plan to purchase
+  decisionMaker   Boolean     @default(false)
+  painPoints      String[]    // Array of identified pain points
+  
+  // Interest and Intent
+  productInterest String[]    // Products/services they're interested in
+  urgencyLevel    Int         @default(1) // 1-10 scale
+  qualificationScore Decimal? @db.Decimal(3, 2) // 0-10 score
+  
+  // Communication
+  preferredContactMethod String? // email, phone, meeting
+  notes           String?
+  tags            String[]
+  
+  // Tracking
+  lastInteractionAt DateTime?
+  lastInteractionType String?
+  nextFollowUpAt  DateTime?
+  interactionCount Int        @default(0)
+  
+  // Conversion tracking
+  convertedAt     DateTime?   // When converted to opportunity
+  conversionValue Decimal?    @db.Decimal(12, 2)
+  
+  // Relations
+  company         Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId       String
+  
+  // Contact relationship (if lead came from existing contact)
+  contact         Contact?    @relation(fields: [contactId], references: [id])
+  contactId       String?
+  
+  // Owner/Assignment - CHANGED TO CompanyUser
+  assignedTo      CompanyUser? @relation("LeadAssignee", fields: [assignedToId], references: [id])
+  assignedToId    String?
+  
+  // Created by - CHANGED TO CompanyUser
+  createdBy       CompanyUser  @relation("LeadCreator", fields: [createdById], references: [id])
+  createdById     String
+  
+  // Custom field values
+  customFieldValues LeadFieldValue[]
+  
+  // Related entities
+  opportunity     Opportunity? // One-to-one when converted
+  activities      Activity[]
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@unique([companyId, email])
+  @@map("leads")
+}

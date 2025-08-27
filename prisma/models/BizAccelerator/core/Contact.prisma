@@ -1,0 +1,73 @@
+model Contact {
+  id            String        @id @default(cuid())
+  
+  // Basic Information
+  firstName     String?
+  lastName      String?
+  fullName      String        // Computed or provided full name
+  email         String?
+  phone         String?
+  secondaryPhone String?
+  
+  // Company Information
+  companyName   String?
+  jobTitle      String?
+  department    String?
+  
+  // Address Information
+  address       String?
+  city          String?
+  state         String?
+  country       String?
+  zipCode       String?
+  
+  // Contact Details
+  contactType   ContactType   @default(INDIVIDUAL)
+  priority      ContactPriority @default(MEDIUM)
+  status        ContactStatus @default(ACTIVE)
+  
+  // Business Information
+  website       String?
+  linkedinUrl   String?
+  twitterHandle String?
+  
+  // Relationship Information
+  source        String?       // How this contact was acquired
+  tags          String[]      // Array of tags for categorization
+  notes         String?       // General notes about the contact
+  
+  // Account/Deal relationship
+  accountValue  Decimal?      @db.Decimal(12, 2)
+  currency      String?       @default("USD")
+  
+  // Engagement tracking
+  lastInteractionAt DateTime?
+  lastInteractionType String? // email, call, meeting, etc.
+  interactionCount    Int     @default(0)
+  
+  // Relations
+  company       Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId     String
+  
+  // Owner/Assignment - CHANGED TO CompanyUser
+  assignedTo    CompanyUser?  @relation("ContactAssignee", fields: [assignedToId], references: [id])
+  assignedToId  String?
+  
+  // Created by - CHANGED TO CompanyUser
+  createdBy     CompanyUser   @relation("ContactCreator", fields: [createdById], references: [id])
+  createdById   String
+  
+  // Custom field values
+  customFieldValues ContactFieldValue[]
+  
+  // Related entities
+  leads         Lead[]
+  opportunities Opportunity[]
+  activities    Activity[]
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  @@unique([companyId, email])
+  @@map("contacts")
+}

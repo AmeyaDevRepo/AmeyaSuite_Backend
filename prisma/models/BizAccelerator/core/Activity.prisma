@@ -1,0 +1,45 @@
+model Activity {
+  id              String         @id @default(cuid())
+  
+  // Activity Details
+  type            ActivityType
+  subject         String
+  description     String?
+  status          ActivityStatus @default(PLANNED)
+  
+  // Timing
+  scheduledAt     DateTime?      // When activity is scheduled
+  completedAt     DateTime?      // When activity was completed
+  duration        Int?           // Duration in minutes
+  
+  // Location (for meetings)
+  location        String?
+  meetingLink     String?        // Video meeting link
+  
+  // Relations - polymorphic relationships
+  company         Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId       String
+  
+  // Related entities (optional - activity can be linked to any of these)
+  contact         Contact?       @relation(fields: [contactId], references: [id])
+  contactId       String?
+  
+  lead            Lead?          @relation(fields: [leadId], references: [id])
+  leadId          String?
+  
+  opportunity     Opportunity?   @relation(fields: [opportunityId], references: [id])
+  opportunityId   String?
+  
+  // Owner/Assignment - CHANGED TO CompanyUser
+  assignedTo      CompanyUser?   @relation("ActivityAssignee", fields: [assignedToId], references: [id])
+  assignedToId    String?
+  
+  // Created by - CHANGED TO CompanyUser
+  createdBy       CompanyUser    @relation("ActivityCreator", fields: [createdById], references: [id])
+  createdById     String
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  @@map("activities")
+}

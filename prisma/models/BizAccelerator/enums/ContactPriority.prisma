@@ -1,0 +1,6 @@
+enum ContactPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
