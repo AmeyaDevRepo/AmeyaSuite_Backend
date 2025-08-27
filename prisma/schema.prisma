@@ -1,17 +1,443 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+model User {
+  id                     String       @id @default(cuid())
+  email                  String       @unique
+  password               String?
+  isActive               Boolean      @default(true)
+  emailVerified          Boolean      @default(false)
+  emailVerifiedAt        DateTime?
+  globalRole             GlobalRole   @default(USER)
+  provider               String?
+  providerId             String?
+  lastLoginAt            DateTime?
+  passwordResetToken     String?
+  passwordResetExpires   DateTime?
+  emailVerificationToken String?
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  companyUser            CompanyUser? @relation("UserCompanyUser")
+
+  @@map("users")
 }
 
-// ====================
-// ENUMS
-// ====================
+model Company {
+  id                 String             @id @default(cuid())
+  name               String
+  slug               String             @unique
+  domain             String?            @unique
+  logo               String?
+  website            String?
+  phone              String?
+  email              String?
+  address            String?
+  city               String?
+  state              String?
+  country            String?
+  zipCode            String?
+  subscriptionPlan   String?
+  subscriptionStatus String             @default("TRIAL")
+  subscriptionEndsAt DateTime?
+  maxUsers           Int                @default(10)
+  isActive           Boolean            @default(true)
+  settings           Json?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  themeColor         String?            @default("#004aad")
+  activities         Activity[]         @relation("CompanyActivities")
+  attendanceRecords  AttendanceRecord[] @relation("CompanyAttendanceRecords")
+  companyRoles       CompanyRole[]      @relation("CompaniesRoles")
+  companyUsers       CompanyUser?
+  contacts           Contact[]          @relation("CompanyContacts")
+  customFields       CustomField[]      @relation("CompanyCustomFields")
+  departments        Department[]       @relation("CompanyDepartments")
+  employees          Employee[]         @relation("CompanyEmployees")
+  leads              Lead[]             @relation("CompanyLeads")
+  opportunities      Opportunity[]      @relation("CompanyOpportunities")
 
-// Attendance status enum
+  @@map("companies")
+}
+
+model CompanyRole {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String?
+  companyId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  permissions String[]
+  company     Company  @relation("CompaniesRoles", fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, name])
+  @@map("company_roles")
+}
+
+model CompanyUser {
+  id                    String            @id @default(cuid())
+  userId                String            @unique
+  companyId             String            @unique
+  status                CompanyUserStatus @default(PENDING)
+  isActive              Boolean           @default(true)
+  invitedBy             String?
+  invitedAt             DateTime          @default(now())
+  joinedAt              DateTime?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  assignedToId          String?
+  avatar                String?
+  firstName             String?
+  lastName              String?
+  middleName            String?
+  assignedActivities    Activity[]        @relation("ActivityAssignee")
+  createdActivities     Activity[]        @relation("ActivityCreator")
+  assignedTo            CompanyUser?      @relation("UserAssignments", fields: [assignedToId], references: [id])
+  assignedUsers         CompanyUser[]     @relation("UserAssignments")
+  company               Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user                  User              @relation("UserCompanyUser", fields: [userId], references: [id])
+  assignedContacts      Contact[]         @relation("ContactAssignee")
+  createdContacts       Contact[]         @relation("ContactCreator")
+  employee              Employee?         @relation("EmployeeCompanyUser")
+  assignedLeads         Lead[]            @relation("LeadAssignee")
+  createdLeads          Lead[]            @relation("LeadCreator")
+  assignedOpportunities Opportunity[]     @relation("OpportunityAssignee")
+  createdOpportunities  Opportunity[]     @relation("OpportunityCreator")
+
+  @@map("company_users")
+}
+
+model CustomField {
+  id                 String              @id @default(cuid())
+  name               String
+  fieldKey           String
+  fieldType          FieldType
+  isRequired         Boolean             @default(false)
+  isActive           Boolean             @default(true)
+  options            Json?
+  validation         Json?
+  placeholder        String?
+  helpText           String?
+  displayOrder       Int                 @default(0)
+  companyId          String
+  entityType         String
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  contactFieldValues ContactFieldValue[]
+  company            Company             @relation("CompanyCustomFields", fields: [companyId], references: [id], onDelete: Cascade)
+  leadFieldValues    LeadFieldValue[]
+
+  @@unique([companyId, entityType, fieldKey])
+  @@map("custom_fields")
+}
+
+model AttendanceRecord {
+  id            String           @id @default(cuid())
+  date          DateTime         @db.Date
+  checkIn       DateTime?
+  checkOut      DateTime?
+  breakStart    DateTime?
+  breakEnd      DateTime?
+  hoursWorked   Decimal?         @db.Decimal(4, 2)
+  breakHours    Decimal?         @db.Decimal(4, 2)
+  overtimeHours Decimal?         @db.Decimal(4, 2)
+  status        AttendanceStatus @default(PRESENT)
+  notes         String?
+  location      String?
+  ipAddress     String?
+  approvedBy    String?
+  approvedAt    DateTime?
+  employeeId    String
+  companyId     String
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  company       Company          @relation("CompanyAttendanceRecords", fields: [companyId], references: [id], onDelete: Cascade)
+  employee      Employee         @relation("EmployeeAttendanceRecords", fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@map("attendance_records")
+}
+
+model Department {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  code        String?
+  parentId    String?
+  headId      String?
+  companyId   String
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  company     Company      @relation("CompanyDepartments", fields: [companyId], references: [id], onDelete: Cascade)
+  parent      Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id])
+  children    Department[] @relation("DepartmentHierarchy")
+  employees   Employee[]   @relation("DepartmentEmployees")
+
+  @@unique([companyId, name])
+  @@unique([companyId, code])
+  @@map("departments")
+}
+
+model Employee {
+  id                String             @id @default(cuid())
+  employeeId        String
+  firstName         String
+  lastName          String
+  email             String
+  phone             String?
+  dateOfBirth       DateTime?
+  gender            Gender?
+  maritalStatus     MaritalStatus?
+  address           String?
+  city              String?
+  state             String?
+  country           String?
+  zipCode           String?
+  position          String
+  hireDate          DateTime
+  employmentType    EmploymentType     @default(FULL_TIME)
+  workLocation      WorkLocation       @default(OFFICE)
+  salary            Decimal?           @db.Decimal(10, 2)
+  currency          String?            @default("USD")
+  managerId         String?
+  companyId         String
+  departmentId      String?
+  companyUserId     String?            @unique
+  status            EmployeeStatus     @default(ACTIVE)
+  terminationDate   DateTime?
+  terminationReason String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  attendanceRecords AttendanceRecord[] @relation("EmployeeAttendanceRecords")
+  company           Company            @relation("CompanyEmployees", fields: [companyId], references: [id], onDelete: Cascade)
+  companyUser       CompanyUser?       @relation("EmployeeCompanyUser", fields: [companyUserId], references: [id])
+  department        Department?        @relation("DepartmentEmployees", fields: [departmentId], references: [id])
+  manager           Employee?          @relation("EmployeeManager", fields: [managerId], references: [id])
+  directReports     Employee[]         @relation("EmployeeManager")
+  leaveRequests     LeaveRequest[]     @relation("EmployeeLeaveRequests")
+
+  @@unique([companyId, employeeId])
+  @@unique([companyId, email])
+  @@map("employees")
+}
+
+model LeaveRequest {
+  id              String      @id @default(cuid())
+  leaveType       LeaveType
+  startDate       DateTime    @db.Date
+  endDate         DateTime    @db.Date
+  days            Int
+  reason          String
+  status          LeaveStatus @default(PENDING)
+  approvedBy      String?
+  approvedAt      DateTime?
+  rejectionReason String?
+  employeeId      String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  employee        Employee    @relation("EmployeeLeaveRequests", fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("leave_requests")
+}
+
+model Activity {
+  id            String         @id @default(cuid())
+  type          ActivityType
+  subject       String
+  description   String?
+  status        ActivityStatus @default(PLANNED)
+  scheduledAt   DateTime?
+  completedAt   DateTime?
+  duration      Int?
+  location      String?
+  meetingLink   String?
+  companyId     String
+  contactId     String?
+  leadId        String?
+  opportunityId String?
+  assignedToId  String?
+  createdById   String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  assignedTo    CompanyUser?   @relation("ActivityAssignee", fields: [assignedToId], references: [id])
+  company       Company        @relation("CompanyActivities", fields: [companyId], references: [id], onDelete: Cascade)
+  contact       Contact?       @relation(fields: [contactId], references: [id])
+  createdBy     CompanyUser    @relation("ActivityCreator", fields: [createdById], references: [id])
+  lead          Lead?          @relation(fields: [leadId], references: [id])
+  opportunity   Opportunity?   @relation(fields: [opportunityId], references: [id])
+
+  @@map("activities")
+}
+
+model Contact {
+  id                  String              @id @default(cuid())
+  firstName           String?
+  lastName            String?
+  fullName            String
+  email               String?
+  phone               String?
+  secondaryPhone      String?
+  companyName         String?
+  jobTitle            String?
+  department          String?
+  address             String?
+  city                String?
+  state               String?
+  country             String?
+  zipCode             String?
+  contactType         ContactType         @default(INDIVIDUAL)
+  priority            ContactPriority     @default(MEDIUM)
+  status              ContactStatus       @default(ACTIVE)
+  website             String?
+  linkedinUrl         String?
+  twitterHandle       String?
+  source              String?
+  tags                String[]
+  notes               String?
+  accountValue        Decimal?            @db.Decimal(12, 2)
+  currency            String?             @default("USD")
+  lastInteractionAt   DateTime?
+  lastInteractionType String?
+  interactionCount    Int                 @default(0)
+  companyId           String
+  assignedToId        String?
+  createdById         String
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  activities          Activity[]
+  customFieldValues   ContactFieldValue[]
+  assignedTo          CompanyUser?        @relation("ContactAssignee", fields: [assignedToId], references: [id])
+  company             Company             @relation("CompanyContacts", fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy           CompanyUser         @relation("ContactCreator", fields: [createdById], references: [id])
+  leads               Lead[]
+  opportunities       Opportunity[]
+
+  @@unique([companyId, email])
+  @@map("contacts")
+}
+
+model ContactFieldValue {
+  id            String      @id @default(cuid())
+  contactId     String
+  customFieldId String
+  textValue     String?
+  numberValue   Decimal?    @db.Decimal(15, 4)
+  dateValue     DateTime?
+  booleanValue  Boolean?
+  jsonValue     Json?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  contact       Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  customField   CustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
+
+  @@unique([contactId, customFieldId])
+  @@map("contact_field_values")
+}
+
+model Lead {
+  id                     String           @id @default(cuid())
+  firstName              String?
+  lastName               String?
+  fullName               String
+  email                  String?
+  phone                  String?
+  companyName            String?
+  jobTitle               String?
+  companySize            String?
+  industry               String?
+  leadType               LeadType         @default(COLD)
+  status                 LeadStatus       @default(NEW)
+  source                 LeadSource       @default(OTHER)
+  budget                 Decimal?         @db.Decimal(12, 2)
+  currency               String?          @default("USD")
+  timeline               String?
+  decisionMaker          Boolean          @default(false)
+  painPoints             String[]
+  productInterest        String[]
+  urgencyLevel           Int              @default(1)
+  qualificationScore     Decimal?         @db.Decimal(3, 2)
+  preferredContactMethod String?
+  notes                  String?
+  tags                   String[]
+  lastInteractionAt      DateTime?
+  lastInteractionType    String?
+  nextFollowUpAt         DateTime?
+  interactionCount       Int              @default(0)
+  convertedAt            DateTime?
+  conversionValue        Decimal?         @db.Decimal(12, 2)
+  companyId              String
+  contactId              String?
+  assignedToId           String?
+  createdById            String
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  activities             Activity[]
+  customFieldValues      LeadFieldValue[]
+  assignedTo             CompanyUser?     @relation("LeadAssignee", fields: [assignedToId], references: [id])
+  company                Company          @relation("CompanyLeads", fields: [companyId], references: [id], onDelete: Cascade)
+  contact                Contact?         @relation(fields: [contactId], references: [id])
+  createdBy              CompanyUser      @relation("LeadCreator", fields: [createdById], references: [id])
+  opportunity            Opportunity?
+
+  @@unique([companyId, email])
+  @@map("leads")
+}
+
+model LeadFieldValue {
+  id            String      @id @default(cuid())
+  leadId        String
+  customFieldId String
+  textValue     String?
+  numberValue   Decimal?    @db.Decimal(15, 4)
+  dateValue     DateTime?
+  booleanValue  Boolean?
+  jsonValue     Json?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  customField   CustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
+  lead          Lead        @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@unique([leadId, customFieldId])
+  @@map("lead_field_values")
+}
+
+model Opportunity {
+  id                String           @id @default(cuid())
+  name              String
+  value             Decimal          @db.Decimal(12, 2)
+  currency          String           @default("USD")
+  probability       Int              @default(50)
+  expectedCloseDate DateTime?
+  actualCloseDate   DateTime?
+  stage             OpportunityStage @default(NEW_QUALIFIED)
+  isActive          Boolean          @default(true)
+  description       String?
+  competitorInfo    String?
+  lossReason        String?
+  companyId         String
+  leadId            String           @unique
+  contactId         String
+  assignedToId      String?
+  createdById       String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  activities        Activity[]
+  assignedTo        CompanyUser?     @relation("OpportunityAssignee", fields: [assignedToId], references: [id])
+  company           Company          @relation("CompanyOpportunities", fields: [companyId], references: [id], onDelete: Cascade)
+  contact           Contact          @relation(fields: [contactId], references: [id])
+  createdBy         CompanyUser      @relation("OpportunityCreator", fields: [createdById], references: [id])
+  lead              Lead             @relation(fields: [leadId], references: [id])
+
+  @@map("opportunities")
+}
+
 enum AttendanceStatus {
   PRESENT
   ABSENT
@@ -24,15 +450,13 @@ enum AttendanceStatus {
   WORK_FROM_HOME
 }
 
-// Status of user in a company
 enum CompanyUserStatus {
-  PENDING   // Invitation sent but not accepted
-  ACTIVE    // User is active in the company
-  SUSPENDED // User is temporarily suspended
-  INACTIVE  // User left or was removed
+  PENDING
+  ACTIVE
+  SUSPENDED
+  INACTIVE
 }
 
-// Employee status enum
 enum EmployeeStatus {
   ACTIVE
   INACTIVE
@@ -41,7 +465,6 @@ enum EmployeeStatus {
   SUSPENDED
 }
 
-// Employment type enum
 enum EmploymentType {
   FULL_TIME
   PART_TIME
@@ -65,7 +488,6 @@ enum FieldType {
   CURRENCY
 }
 
-// Employee gender enum
 enum Gender {
   MALE
   FEMALE
@@ -73,13 +495,11 @@ enum Gender {
   PREFER_NOT_TO_SAY
 }
 
-// Global roles for system-wide permissions
 enum GlobalRole {
-  SUPER_ADMIN // Can access all companies and system settings
-  USER        // Regular user who can be invited to companies
+  SUPER_ADMIN
+  USER
 }
 
-// Leave status enum
 enum LeaveStatus {
   PENDING
   APPROVED
@@ -87,7 +507,6 @@ enum LeaveStatus {
   CANCELLED
 }
 
-// Leave types enum
 enum LeaveType {
   SICK_LEAVE
   CASUAL_LEAVE
@@ -99,7 +518,6 @@ enum LeaveType {
   COMPENSATORY_LEAVE
 }
 
-// Marital status enum
 enum MaritalStatus {
   SINGLE
   MARRIED
@@ -108,663 +526,11 @@ enum MaritalStatus {
   SEPARATED
 }
 
-// Work location enum
 enum WorkLocation {
   OFFICE
   REMOTE
   HYBRID
 }
-
-// ====================
-// AUTHENTICATION MODELS
-// ====================
-
-// User authentication model
-model User {
-  id       String  @id @default(cuid())
-  email    String  @unique
-  password String? // Optional for OAuth users
-
-  // Account status
-  isActive        Boolean   @default(true)
-  emailVerified   Boolean   @default(false)
-  emailVerifiedAt DateTime?
-
-  // Global role (for system administration)
-  globalRole GlobalRole @default(USER)
-
-  // OAuth and external integrations
-  provider   String? // 'local', 'google', 'github', etc.
-  providerId String? // External provider user ID
-
-  // Security
-  lastLoginAt            DateTime?
-  passwordResetToken     String?
-  passwordResetExpires   DateTime?
-  emailVerificationToken String?
-
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  companyUser CompanyUser? @relation("UserCompanyUser")
-
-  @@map("users")
-}
-
-// ====================
-// CORE SAAS MODELS
-// ====================
-
-// Company/Tenant model for multi-tenancy
-model Company {
-  id         String  @id @default(cuid())
-  name       String
-  slug       String  @unique // URL-friendly company identifier
-  domain     String? @unique // Custom domain for the company
-  logo       String? // Company logo URL
-  themeColor String? @default("#004aad") // Company theme color for UI customization
-  website    String?
-  phone      String?
-  email      String?
-  address    String?
-  city       String?
-  state      String?
-  country    String?
-  zipCode    String?
-
-  // Subscription details
-  subscriptionPlan   String? // Basic, Pro, Enterprise
-  subscriptionStatus String    @default("TRIAL") // TRIAL, ACTIVE, SUSPENDED, CANCELLED
-  subscriptionEndsAt DateTime?
-  maxUsers           Int       @default(10)
-
-  // Settings
-  isActive Boolean @default(true)
-  settings Json? // Company-specific settings
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  companyUsers CompanyUser[]
-  companyRoles CompanyRole[] @relation("CompaniesRoles")
-
-  // Business Relations
-  departments       Department[]       @relation("CompanyDepartments")
-  employees         Employee[]         @relation("CompanyEmployees")
-  attendanceRecords AttendanceRecord[] @relation("CompanyAttendanceRecords")
-
-  // CRM Relations
-  contacts      Contact[]     @relation("CompanyContacts")
-  leads         Lead[]        @relation("CompanyLeads")
-  opportunities Opportunity[] @relation("CompanyOpportunities")
-  activities    Activity[]    @relation("CompanyActivities")
-  customFields  CustomField[] @relation("CompanyCustomFields")
-
-  @@map("companies")
-}
-
-// Company-specific roles (dynamic roles created by companies)
-model CompanyRole {
-  id          String  @id @default(cuid())
-  name        String  @unique// e.g., "Manager", "HR Lead", "Team Lead"
-  description String?
-  color       String? // Hex color for UI
-
-  // Relations
-  companyId String  @unique
-  company   Company @relation("CompaniesRoles", fields: [companyId], references: [id], onDelete: Cascade)
-
-  permissions String[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("company_roles")
-}
-
-// Many-to-many relationship between company users and companies
-model CompanyUser {
-  id String @id @default(cuid())
-
-  // Relations
-  userId     String            @unique
-  user       User              @relation("UserCompanyUser",fields: [userId], references: [id])
-  companyId  String            @unique
-  company    Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  firstName  String?
-  middleName String?
-  lastName   String?
-  avatar     String?
-  // Status
-  status     CompanyUserStatus @default(PENDING)
-  isActive   Boolean           @default(true)
-
-  // Invitation details
-  invitedBy             String? // User ID who invited this user
-  invitedAt             DateTime      @default(now())
-  joinedAt              DateTime?
-  // Self-referential relation: users assigned to this user
-  assignedUsers         CompanyUser[] @relation("UserAssignments")
-  // The user this record is assigned to (optional)
-  assignedToId          String?
-  assignedTo            CompanyUser?  @relation("UserAssignments", fields: [assignedToId], references: [id])
-  assignedContacts      Contact[]     @relation("ContactAssignee")
-  createdContacts       Contact[]     @relation("ContactCreator")
-  assignedLeads         Lead[]        @relation("LeadAssignee")
-  createdLeads          Lead[]        @relation("LeadCreator")
-  assignedOpportunities Opportunity[] @relation("OpportunityAssignee")
-  createdOpportunities  Opportunity[] @relation("OpportunityCreator")
-  assignedActivities    Activity[]    @relation("ActivityAssignee")
-  createdActivities     Activity[]    @relation("ActivityCreator")
-
-  // Back-reference (optional) from Employee side; Employee holds FK
-  employee Employee? @relation("EmployeeCompanyUser")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("company_users")
-}
-
-model CustomField {
-  id          String    @id @default(cuid())
-  name        String    // Field display name
-  fieldKey    String    // Unique key for the field (snake_case)
-  fieldType   FieldType
-  isRequired  Boolean   @default(false)
-  isActive    Boolean   @default(true)
-  
-  // Field options (for dropdowns, etc.)
-  options     Json?     // Array of options for dropdown/checkbox
-  
-  // Validation rules
-  validation  Json?     // Min/max values, regex patterns, etc.
-  
-  // Display settings
-  placeholder String?
-  helpText    String?
-  displayOrder Int      @default(0)
-  
-  // Relations
-  company     Company   @relation("CompanyCustomFields", fields: [companyId], references: [id], onDelete: Cascade)
-  companyId   String
-  
-  // Entity type this field belongs to
-  entityType  String    // 'contact', 'lead', 'opportunity', 'deal'
-  
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  // Relations to field values
-  contactFieldValues ContactFieldValue[]
-  leadFieldValues    LeadFieldValue[]
-  
-  @@unique([companyId, entityType, fieldKey])
-  @@map("custom_fields")
-}
-
-// ====================
-// BUSINESS MODELS
-// ====================
-
-// Attendance tracking
-model AttendanceRecord {
-  id          String   @id @default(cuid())
-  date        DateTime @db.Date
-  
-  // Time tracking
-  checkIn     DateTime?
-  checkOut    DateTime?
-  breakStart  DateTime?
-  breakEnd    DateTime?
-  
-  // Calculated fields
-  hoursWorked Decimal? @db.Decimal(4, 2)
-  breakHours  Decimal? @db.Decimal(4, 2)
-  overtimeHours Decimal? @db.Decimal(4, 2)
-  
-  // Status
-  status      AttendanceStatus @default(PRESENT)
-  notes       String?
-  location    String? // Check-in location
-  ipAddress   String? // IP address for remote check-ins
-  
-  // Approval
-  approvedBy  String? // Manager who approved
-  approvedAt  DateTime?
-  
-  // Relations
-  employee    Employee @relation("EmployeeAttendanceRecords", fields: [employeeId], references: [id], onDelete: Cascade)
-  employeeId  String
-  company     Company  @relation("CompanyAttendanceRecords", fields: [companyId], references: [id], onDelete: Cascade)
-  companyId   String
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  @@unique([employeeId, date])
-  @@map("attendance_records")
-}
-
-// Department model for company organization
-model Department {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  code        String?  // Department code like "IT", "HR", "FIN"
-  
-  // Hierarchy
-  parentId    String?
-  parent      Department? @relation("DepartmentHierarchy", fields: [parentId], references: [id])
-  children    Department[] @relation("DepartmentHierarchy")
-  
-  // Department head
-  headId      String?  // Employee ID who heads this department
-  
-  // Relations
-  company     Company  @relation("CompanyDepartments", fields: [companyId], references: [id], onDelete: Cascade)
-  companyId   String
-  employees   Employee[] @relation("DepartmentEmployees")
-  
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  @@unique([companyId, name])
-  @@unique([companyId, code])
-  @@map("departments")
-}
-
-// Employee profile within a company
-model Employee {
-  id            String   @id @default(cuid())
-  employeeId    String   // Company-specific employee ID
-  
-  // Personal Information
-  firstName     String
-  lastName      String
-  email         String
-  phone         String?
-  dateOfBirth   DateTime?
-  gender        Gender?
-  maritalStatus MaritalStatus?
-  
-  // Address
-  address       String?
-  city          String?
-  state         String?
-  country       String?
-  zipCode       String?
-  
-  // Employment Details
-  position      String   // Job title
-  hireDate      DateTime
-  employmentType EmploymentType @default(FULL_TIME)
-  workLocation  WorkLocation @default(OFFICE)
-  salary        Decimal? @db.Decimal(10, 2)
-  currency      String?  @default("USD")
-  
-  // Work Information
-  manager       Employee? @relation("EmployeeManager", fields: [managerId], references: [id])
-  managerId     String?
-  directReports Employee[] @relation("EmployeeManager")
-  
-  // Relations
-  company       Company  @relation("CompanyEmployees", fields: [companyId], references: [id], onDelete: Cascade)
-  companyId     String
-  department    Department? @relation("DepartmentEmployees", fields: [departmentId], references: [id])
-  departmentId  String?
-  companyUserId String? @unique
-  companyUser   CompanyUser? @relation("EmployeeCompanyUser", fields: [companyUserId], references: [id])
-  
-  // Attendance and Leave
-  attendanceRecords AttendanceRecord[] @relation("EmployeeAttendanceRecords")
-  leaveRequests     LeaveRequest[] @relation("EmployeeLeaveRequests")
-  
-  // Status
-  status        EmployeeStatus @default(ACTIVE)
-  terminationDate DateTime?
-  terminationReason String?
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  @@unique([companyId, employeeId])
-  @@unique([companyId, email])
-  @@map("employees")
-}
-
-// Leave management
-model LeaveRequest {
-  id          String   @id @default(cuid())
-  leaveType   LeaveType
-  startDate   DateTime @db.Date
-  endDate     DateTime @db.Date
-  days        Int      // Number of days requested
-  reason      String
-  status      LeaveStatus @default(PENDING)
-  
-  // Approval workflow
-  approvedBy  String?  // Manager who approved/rejected
-  approvedAt  DateTime?
-  rejectionReason String?
-  
-  // Relations
-  employee    Employee @relation("EmployeeLeaveRequests", fields: [employeeId], references: [id], onDelete: Cascade)
-  employeeId  String
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  @@map("leave_requests")
-}
-
-// ====================
-// BIZACCELERATOR\CORE MODELS
-// ====================
-
-model Activity {
-  id              String         @id @default(cuid())
-  
-  // Activity Details
-  type            ActivityType
-  subject         String
-  description     String?
-  status          ActivityStatus @default(PLANNED)
-  
-  // Timing
-  scheduledAt     DateTime?      // When activity is scheduled
-  completedAt     DateTime?      // When activity was completed
-  duration        Int?           // Duration in minutes
-  
-  // Location (for meetings)
-  location        String?
-  meetingLink     String?        // Video meeting link
-  
-  // Relations - polymorphic relationships
-  company         Company        @relation("CompanyActivities", fields: [companyId], references: [id], onDelete: Cascade)
-  companyId       String
-  
-  // Related entities (optional - activity can be linked to any of these)
-  contact         Contact?       @relation(fields: [contactId], references: [id])
-  contactId       String?
-  
-  lead            Lead?          @relation(fields: [leadId], references: [id])
-  leadId          String?
-  
-  opportunity     Opportunity?   @relation(fields: [opportunityId], references: [id])
-  opportunityId   String?
-  
-  // Owner/Assignment - CHANGED TO CompanyUser
-  assignedTo      CompanyUser?   @relation("ActivityAssignee", fields: [assignedToId], references: [id])
-  assignedToId    String?
-  
-  // Created by - CHANGED TO CompanyUser
-  createdBy       CompanyUser    @relation("ActivityCreator", fields: [createdById], references: [id])
-  createdById     String
-  
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  
-  @@map("activities")
-}
-
-model Contact {
-  id            String        @id @default(cuid())
-  
-  // Basic Information
-  firstName     String?
-  lastName      String?
-  fullName      String        // Computed or provided full name
-  email         String?
-  phone         String?
-  secondaryPhone String?
-  
-  // Company Information
-  companyName   String?
-  jobTitle      String?
-  department    String?
-  
-  // Address Information
-  address       String?
-  city          String?
-  state         String?
-  country       String?
-  zipCode       String?
-  
-  // Contact Details
-  contactType   ContactType   @default(INDIVIDUAL)
-  priority      ContactPriority @default(MEDIUM)
-  status        ContactStatus @default(ACTIVE)
-  
-  // Business Information
-  website       String?
-  linkedinUrl   String?
-  twitterHandle String?
-  
-  // Relationship Information
-  source        String?       // How this contact was acquired
-  tags          String[]      // Array of tags for categorization
-  notes         String?       // General notes about the contact
-  
-  // Account/Deal relationship
-  accountValue  Decimal?      @db.Decimal(12, 2)
-  currency      String?       @default("USD")
-  
-  // Engagement tracking
-  lastInteractionAt DateTime?
-  lastInteractionType String? // email, call, meeting, etc.
-  interactionCount    Int     @default(0)
-  
-  // Relations
-  company       Company       @relation("CompanyContacts", fields: [companyId], references: [id], onDelete: Cascade)
-  companyId     String
-  
-  // Owner/Assignment - CHANGED TO CompanyUser
-  assignedTo    CompanyUser?  @relation("ContactAssignee", fields: [assignedToId], references: [id])
-  assignedToId  String?
-  
-  // Created by - CHANGED TO CompanyUser
-  createdBy     CompanyUser   @relation("ContactCreator", fields: [createdById], references: [id])
-  createdById   String
-  
-  // Custom field values
-  customFieldValues ContactFieldValue[]
-  
-  // Related entities
-  leads         Lead[]
-  opportunities Opportunity[]
-  activities    Activity[]
-  
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  
-  @@unique([companyId, email])
-  @@map("contacts")
-}
-
-// Dynamic field values for contacts
-model ContactFieldValue {
-  id            String      @id @default(cuid())
-  
-  // Relations
-  contact       Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  contactId     String
-  customField   CustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
-  customFieldId String
-  
-  // Value storage (polymorphic)
-  textValue     String?
-  numberValue   Decimal?    @db.Decimal(15, 4)
-  dateValue     DateTime?
-  booleanValue  Boolean?
-  jsonValue     Json?       // For complex data like arrays, objects
-  
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  
-  @@unique([contactId, customFieldId])
-  @@map("contact_field_values")
-}
-
-model Lead {
-  id              String      @id @default(cuid())
-  
-  // Basic Information
-  firstName       String?
-  lastName        String?
-  fullName        String      // Computed or provided full name
-  email           String?
-  phone           String?
-  
-  // Company Information
-  companyName     String?
-  jobTitle        String?
-  companySize     String?     // Small, Medium, Large, Enterprise
-  industry        String?
-  
-  // Lead Classification
-  leadType        LeadType    @default(COLD)
-  status          LeadStatus  @default(NEW)
-  source          LeadSource  @default(OTHER)
-  
-  // Qualification Information
-  budget          Decimal?    @db.Decimal(12, 2)
-  currency        String?     @default("USD")
-  timeline        String?     // When they plan to purchase
-  decisionMaker   Boolean     @default(false)
-  painPoints      String[]    // Array of identified pain points
-  
-  // Interest and Intent
-  productInterest String[]    // Products/services they're interested in
-  urgencyLevel    Int         @default(1) // 1-10 scale
-  qualificationScore Decimal? @db.Decimal(3, 2) // 0-10 score
-  
-  // Communication
-  preferredContactMethod String? // email, phone, meeting
-  notes           String?
-  tags            String[]
-  
-  // Tracking
-  lastInteractionAt DateTime?
-  lastInteractionType String?
-  nextFollowUpAt  DateTime?
-  interactionCount Int        @default(0)
-  
-  // Conversion tracking
-  convertedAt     DateTime?   // When converted to opportunity
-  conversionValue Decimal?    @db.Decimal(12, 2)
-  
-  // Relations
-  company         Company     @relation("CompanyLeads", fields: [companyId], references: [id], onDelete: Cascade)
-  companyId       String
-  
-  // Contact relationship (if lead came from existing contact)
-  contact         Contact?    @relation(fields: [contactId], references: [id])
-  contactId       String?
-  
-  // Owner/Assignment - CHANGED TO CompanyUser
-  assignedTo      CompanyUser? @relation("LeadAssignee", fields: [assignedToId], references: [id])
-  assignedToId    String?
-  
-  // Created by - CHANGED TO CompanyUser
-  createdBy       CompanyUser  @relation("LeadCreator", fields: [createdById], references: [id])
-  createdById     String
-  
-  // Custom field values
-  customFieldValues LeadFieldValue[]
-  
-  // Related entities
-  opportunity     Opportunity? // One-to-one when converted
-  activities      Activity[]
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
-  @@unique([companyId, email])
-  @@map("leads")
-}
-
-// Dynamic field values for leads
-model LeadFieldValue {
-  id            String      @id @default(cuid())
-  
-  // Relations
-  lead          Lead        @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  leadId        String
-  customField   CustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
-  customFieldId String
-  
-  // Value storage (polymorphic)
-  textValue     String?
-  numberValue   Decimal?    @db.Decimal(15, 4)
-  dateValue     DateTime?
-  booleanValue  Boolean?
-  jsonValue     Json?       // For complex data like arrays, objects
-  
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  
-  @@unique([leadId, customFieldId])
-  @@map("lead_field_values")
-}
-
-model Opportunity {
-  id              String           @id @default(cuid())
-  name            String           // Opportunity name/title
-  
-  // Value Information
-  value           Decimal          @db.Decimal(12, 2)
-  currency        String           @default("USD")
-  probability     Int              @default(50) // 0-100%
-  
-  // Timeline
-  expectedCloseDate DateTime?
-  actualCloseDate   DateTime?
-  
-  // Stage and Status
-  stage           OpportunityStage @default(NEW_QUALIFIED)
-  isActive        Boolean          @default(true)
-  
-  // Details
-  description     String?
-  competitorInfo  String?
-  lossReason      String?          // If lost, reason for loss
-  
-  // Relations
-  company         Company          @relation("CompanyOpportunities", fields: [companyId], references: [id], onDelete: Cascade)
-  companyId       String
-  
-  // Source lead (one-to-one relationship)
-  lead            Lead             @relation(fields: [leadId], references: [id])
-  leadId          String           @unique
-  
-  // Contact relationship
-  contact         Contact          @relation(fields: [contactId], references: [id])
-  contactId       String
-  
-  // Owner/Assignment - CHANGED TO CompanyUser
-  assignedTo      CompanyUser?     @relation("OpportunityAssignee", fields: [assignedToId], references: [id])
-  assignedToId    String?
-  
-  // Created by - CHANGED TO CompanyUser
-  createdBy       CompanyUser      @relation("OpportunityCreator", fields: [createdById], references: [id])
-  createdById     String
-  
-  // Related entities
-  activities      Activity[]
-  
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  
-  @@map("opportunities")
-}
-
-// ====================
-// BIZACCELERATOR\ENUMS MODELS
-// ====================
 
 enum ActivityStatus {
   PLANNED
@@ -827,7 +593,7 @@ enum LeadStatus {
   QUALIFIED
   FOLLOWUP
   CONTACTED
-  QUALIFIED_OPPORTUNITY  // Goes to opportunity
+  QUALIFIED_OPPORTUNITY
   NOT_QUALIFIED
   ON_HOLD
   LOST
@@ -848,4 +614,3 @@ enum OpportunityStage {
   WON
   LOST
 }
-

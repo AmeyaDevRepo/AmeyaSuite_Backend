@@ -8,11 +8,169 @@ function sanitizeUser(user: any) {
     return rest;
 }
 
+interface CompanySignupData {
+    // User data
+    email: string;
+    password: string;
+    firstName?: string;
+    lastName?: string;
+    name?: string;
+    
+    // Company data
+    companyName: string;
+    themeColor?: string;
+    phone?: string;
+    companyEmail?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+}
+
 @Injectable()
 export class AuthService {
     private readonly saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS || 10);
     private readonly logger = new Logger(AuthService.name);
     constructor(private readonly prisma: PrismaService) { }
+
+    async companySignup(data: CompanySignupData) {
+        try {
+            // Check if user already exists
+            const existingUser = await this.prisma.user.findUnique({ 
+                where: { email: data.email.toLowerCase() } 
+            });
+            if (existingUser) throw new Error('EMAIL_IN_USE');
+
+            // Check if company name is already taken
+            const existingCompany = await this.prisma.company.findFirst({
+                where: { name: data.companyName.trim() }
+            });
+            if (existingCompany) throw new Error('COMPANY_NAME_TAKEN');
+
+            // Hash password
+            const hash = await bcrypt.hash(data.password, this.saltRounds);
+
+            // Derive first/last name
+            let firstName = data.firstName;
+            let lastName = data.lastName;
+            if (!firstName && !lastName && data.name) {
+                const parts = data.name.trim().split(/\s+/);
+                firstName = parts.shift();
+                lastName = parts.length ? parts.join(' ') : undefined;
+            }
+
+            // Create slug for company
+            const slug = data.companyName.toLowerCase()
+                .replace(/[^a-z0-9]/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '');
+
+            // Start transaction for atomicity
+            const result = await this.prisma.$transaction(async (tx) => {
+                // 1. Create User
+                const user = await tx.user.create({
+                    data: {
+                        email: data.email.toLowerCase(),
+                        password: hash,
+                    }
+                });
+
+                // 2. Create Company
+                const company = await tx.company.create({
+                    data: {
+                        name: data.companyName.trim(),
+                        slug: slug,
+                        themeColor: data.themeColor || '#004aad',
+                        phone: data.phone,
+                        email: data.companyEmail || data.email,
+                        address: data.address,
+                        city: data.city,
+                        state: data.state,
+                        zipCode: data.zipCode,
+                    }
+                });
+
+                // 3. Create default company roles (create only Admin role for now to avoid constraint issues)
+                let adminRole, managerRole, userRole;
+                
+                try {
+                    // First, check if any roles already exist for this company
+                    const existingRoles = await tx.companyRole.findMany({
+                        where: { companyId: company.id }
+                    });
+                    
+                    if (existingRoles.length > 0) {
+                        // Clean up existing roles first
+                        await tx.companyRole.deleteMany({
+                            where: { companyId: company.id }
+                        });
+                    }
+                    
+                    // Create Admin role
+                    adminRole = await tx.companyRole.create({
+                        data: {
+                            name: 'Admin',
+                            description: 'Full administrative access to the company',
+                            color: '#ef4444',
+                            companyId: company.id,
+                            permissions: ['*'], // Full permissions
+                        }
+                    });
+                    
+                    // Create Manager role
+                    managerRole = await tx.companyRole.create({
+                        data: {
+                            name: 'Manager',
+                            description: 'Management level access',
+                            color: '#f59e0b',
+                            companyId: company.id,
+                            permissions: ['read', 'write', 'manage_team'],
+                        }
+                    });
+                    
+                    // Create User role
+                    userRole = await tx.companyRole.create({
+                        data: {
+                            name: 'User',
+                            description: 'Standard user access',
+                            color: '#10b981',
+                            companyId: company.id,
+                            permissions: ['read', 'write'],
+                        }
+                    });
+                    
+                } catch (error: any) {
+                    this.logger.error('Failed to create company roles', error);
+                    throw new Error(`ROLE_CREATION_FAILED: ${error.message || 'Unknown error'}`);
+                }
+
+                // 4. Create CompanyUser with Admin role for the creator
+                const companyUser = await tx.companyUser.create({
+                    data: {
+                        userId: user.id,
+                        companyId: company.id,
+                        firstName: firstName,
+                        lastName: lastName,
+                        status: 'ACTIVE',
+                        isActive: true,
+                        joinedAt: new Date(),
+                    }
+                });
+
+                return {
+                    user: sanitizeUser(user),
+                    company,
+                    companyUser,
+                    roles: { admin: adminRole, manager: managerRole, user: userRole }
+                };
+            });
+
+            return result;
+        } catch (e: any) {
+            this.logger.error('Company signup failed', e?.stack || e);
+            throw e;
+        }
+    }
 
         async signup(data: { email: string; password: string; name?: string; firstName?: string; lastName?: string }) {
         try {
@@ -31,8 +189,6 @@ export class AuthService {
             data: {
                 email: data.email.toLowerCase(),
                 password: hash,
-                firstName: firstName,
-                lastName: lastName,
             }
         });
             return sanitizeUser(user);

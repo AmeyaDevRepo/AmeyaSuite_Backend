@@ -4,8 +4,7 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 export class SessionAuthGuard implements CanActivate {
   private readonly openRoutes = new Set<string>([
     '/auth/login',
-    '/auth/signup',
-    '/auth/register',
+    '/auth/company-signup',
   ]);
 
   canActivate(context: ExecutionContext): boolean {
