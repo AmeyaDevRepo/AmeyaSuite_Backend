@@ -1,0 +1,10 @@
+enum LeadStatus {
+  NEW
+  QUALIFIED
+  FOLLOWUP
+  CONTACTED
+  QUALIFIED_OPPORTUNITY  // Goes to opportunity
+  NOT_QUALIFIED
+  ON_HOLD
+  LOST
+}

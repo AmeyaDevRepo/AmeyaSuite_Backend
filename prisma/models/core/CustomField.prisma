@@ -1,0 +1,36 @@
+model CustomField {
+  id          String    @id @default(cuid())
+  name        String    // Field display name
+  fieldKey    String    // Unique key for the field (snake_case)
+  fieldType   FieldType
+  isRequired  Boolean   @default(false)
+  isActive    Boolean   @default(true)
+  
+  // Field options (for dropdowns, etc.)
+  options     Json?     // Array of options for dropdown/checkbox
+  
+  // Validation rules
+  validation  Json?     // Min/max values, regex patterns, etc.
+  
+  // Display settings
+  placeholder String?
+  helpText    String?
+  displayOrder Int      @default(0)
+  
+  // Relations
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   String
+  
+  // Entity type this field belongs to
+  entityType  String    // 'contact', 'lead', 'opportunity', 'deal'
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations to field values
+  contactFieldValues ContactFieldValue[]
+  leadFieldValues    LeadFieldValue[]
+  
+  @@unique([companyId, entityType, fieldKey])
+  @@map("custom_fields")
+}

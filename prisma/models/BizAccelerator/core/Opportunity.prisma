@@ -1,0 +1,50 @@
+model Opportunity {
+  id              String           @id @default(cuid())
+  name            String           // Opportunity name/title
+  
+  // Value Information
+  value           Decimal          @db.Decimal(12, 2)
+  currency        String           @default("USD")
+  probability     Int              @default(50) // 0-100%
+  
+  // Timeline
+  expectedCloseDate DateTime?
+  actualCloseDate   DateTime?
+  
+  // Stage and Status
+  stage           OpportunityStage @default(NEW_QUALIFIED)
+  isActive        Boolean          @default(true)
+  
+  // Details
+  description     String?
+  competitorInfo  String?
+  lossReason      String?          // If lost, reason for loss
+  
+  // Relations
+  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId       String
+  
+  // Source lead (one-to-one relationship)
+  lead            Lead             @relation(fields: [leadId], references: [id])
+  leadId          String           @unique
+  
+  // Contact relationship
+  contact         Contact          @relation(fields: [contactId], references: [id])
+  contactId       String
+  
+  // Owner/Assignment - CHANGED TO CompanyUser
+  assignedTo      CompanyUser?     @relation("OpportunityAssignee", fields: [assignedToId], references: [id])
+  assignedToId    String?
+  
+  // Created by - CHANGED TO CompanyUser
+  createdBy       CompanyUser      @relation("OpportunityCreator", fields: [createdById], references: [id])
+  createdById     String
+  
+  // Related entities
+  activities      Activity[]
+  
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  
+  @@map("opportunities")
+}

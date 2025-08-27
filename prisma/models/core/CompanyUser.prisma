@@ -20,6 +20,15 @@ model CompanyUser {
   // Relations
   roles     UserCompanyRole[]
   employee  Employee? // Link to employee profile if applicable
+
+  assignedContacts     Contact[] @relation("ContactAssignee")
+  createdContacts      Contact[] @relation("ContactCreator")
+  assignedLeads        Lead[] @relation("LeadAssignee")
+  createdLeads         Lead[] @relation("LeadCreator")
+  assignedOpportunities Opportunity[] @relation("OpportunityAssignee")
+  createdOpportunities  Opportunity[] @relation("OpportunityCreator")
+  assignedActivities   Activity[] @relation("ActivityAssignee")
+  createdActivities    Activity[] @relation("ActivityCreator")
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -1,0 +1,6 @@
+enum ContactStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+  ARCHIVED
+}

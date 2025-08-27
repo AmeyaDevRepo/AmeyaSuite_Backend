@@ -50,6 +50,21 @@ enum EmploymentType {
   FREELANCE
 }
 
+enum FieldType {
+  TEXT
+  NUMBER
+  DROPDOWN
+  DATE
+  DATE_RANGE
+  CHECKBOX
+  FILE_UPLOAD
+  EMAIL
+  PHONE
+  URL
+  TEXTAREA
+  CURRENCY
+}
+
 // Employee gender enum
 enum Gender {
   MALE
@@ -204,6 +219,12 @@ model Company {
   departments      Department[]
   employees        Employee[]
   attendanceRecords AttendanceRecord[]
+
+  contacts         Contact[]
+  leads            Lead[]
+  opportunities    Opportunity[]
+  activities       Activity[]
+  customFields     CustomField[]
   
   @@map("companies")
 }
@@ -253,12 +274,58 @@ model CompanyUser {
   // Relations
   roles     UserCompanyRole[]
   employee  Employee? // Link to employee profile if applicable
+
+  assignedContacts     Contact[] @relation("ContactAssignee")
+  createdContacts      Contact[] @relation("ContactCreator")
+  assignedLeads        Lead[] @relation("LeadAssignee")
+  createdLeads         Lead[] @relation("LeadCreator")
+  assignedOpportunities Opportunity[] @relation("OpportunityAssignee")
+  createdOpportunities  Opportunity[] @relation("OpportunityCreator")
+  assignedActivities   Activity[] @relation("ActivityAssignee")
+  createdActivities    Activity[] @relation("ActivityCreator")
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
   @@unique([userId, companyId])
   @@map("company_users")
+}
+
+model CustomField {
+  id          String    @id @default(cuid())
+  name        String    // Field display name
+  fieldKey    String    // Unique key for the field (snake_case)
+  fieldType   FieldType
+  isRequired  Boolean   @default(false)
+  isActive    Boolean   @default(true)
+  
+  // Field options (for dropdowns, etc.)
+  options     Json?     // Array of options for dropdown/checkbox
+  
+  // Validation rules
+  validation  Json?     // Min/max values, regex patterns, etc.
+  
+  // Display settings
+  placeholder String?
+  helpText    String?
+  displayOrder Int      @default(0)
+  
+  // Relations
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   String
+  
+  // Entity type this field belongs to
+  entityType  String    // 'contact', 'lead', 'opportunity', 'deal'
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations to field values
+  contactFieldValues ContactFieldValue[]
+  leadFieldValues    LeadFieldValue[]
+  
+  @@unique([companyId, entityType, fieldKey])
+  @@map("custom_fields")
 }
 
 // Permission system for granular access control
@@ -483,4 +550,392 @@ model LeaveRequest {
 
 
 
+
+// ====================
+// BIZACCELERATOR\CORE MODELS
+// ====================
+
+model Activity {
+  id              String         @id @default(cuid())
+  
+  // Activity Details
+  type            ActivityType
+  subject         String
+  description     String?
+  status          ActivityStatus @default(PLANNED)
+  
+  // Timing
+  scheduledAt     DateTime?      // When activity is scheduled
+  completedAt     DateTime?      // When activity was completed
+  duration        Int?           // Duration in minutes
+  
+  // Location (for meetings)
+  location        String?
+  meetingLink     String?        // Video meeting link
+  
+  // Relations - polymorphic relationships
+  company         Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId       String
+  
+  // Related entities (optional - activity can be linked to any of these)
+  contact         Contact?       @relation(fields: [contactId], references: [id])
+  contactId       String?
+  
+  lead            Lead?          @relation(fields: [leadId], references: [id])
+  leadId          String?
+  
+  opportunity     Opportunity?   @relation(fields: [opportunityId], references: [id])
+  opportunityId   String?
+  
+  // Owner/Assignment - CHANGED TO CompanyUser
+  assignedTo      CompanyUser?   @relation("ActivityAssignee", fields: [assignedToId], references: [id])
+  assignedToId    String?
+  
+  // Created by - CHANGED TO CompanyUser
+  createdBy       CompanyUser    @relation("ActivityCreator", fields: [createdById], references: [id])
+  createdById     String
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  @@map("activities")
+}
+
+model Contact {
+  id            String        @id @default(cuid())
+  
+  // Basic Information
+  firstName     String?
+  lastName      String?
+  fullName      String        // Computed or provided full name
+  email         String?
+  phone         String?
+  secondaryPhone String?
+  
+  // Company Information
+  companyName   String?
+  jobTitle      String?
+  department    String?
+  
+  // Address Information
+  address       String?
+  city          String?
+  state         String?
+  country       String?
+  zipCode       String?
+  
+  // Contact Details
+  contactType   ContactType   @default(INDIVIDUAL)
+  priority      ContactPriority @default(MEDIUM)
+  status        ContactStatus @default(ACTIVE)
+  
+  // Business Information
+  website       String?
+  linkedinUrl   String?
+  twitterHandle String?
+  
+  // Relationship Information
+  source        String?       // How this contact was acquired
+  tags          String[]      // Array of tags for categorization
+  notes         String?       // General notes about the contact
+  
+  // Account/Deal relationship
+  accountValue  Decimal?      @db.Decimal(12, 2)
+  currency      String?       @default("USD")
+  
+  // Engagement tracking
+  lastInteractionAt DateTime?
+  lastInteractionType String? // email, call, meeting, etc.
+  interactionCount    Int     @default(0)
+  
+  // Relations
+  company       Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId     String
+  
+  // Owner/Assignment - CHANGED TO CompanyUser
+  assignedTo    CompanyUser?  @relation("ContactAssignee", fields: [assignedToId], references: [id])
+  assignedToId  String?
+  
+  // Created by - CHANGED TO CompanyUser
+  createdBy     CompanyUser   @relation("ContactCreator", fields: [createdById], references: [id])
+  createdById   String
+  
+  // Custom field values
+  customFieldValues ContactFieldValue[]
+  
+  // Related entities
+  leads         Lead[]
+  opportunities Opportunity[]
+  activities    Activity[]
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  @@unique([companyId, email])
+  @@map("contacts")
+}
+
+// Dynamic field values for contacts
+model ContactFieldValue {
+  id            String      @id @default(cuid())
+  
+  // Relations
+  contact       Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId     String
+  customField   CustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
+  customFieldId String
+  
+  // Value storage (polymorphic)
+  textValue     String?
+  numberValue   Decimal?    @db.Decimal(15, 4)
+  dateValue     DateTime?
+  booleanValue  Boolean?
+  jsonValue     Json?       // For complex data like arrays, objects
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  @@unique([contactId, customFieldId])
+  @@map("contact_field_values")
+}
+
+model Lead {
+  id              String      @id @default(cuid())
+  
+  // Basic Information
+  firstName       String?
+  lastName        String?
+  fullName        String      // Computed or provided full name
+  email           String?
+  phone           String?
+  
+  // Company Information
+  companyName     String?
+  jobTitle        String?
+  companySize     String?     // Small, Medium, Large, Enterprise
+  industry        String?
+  
+  // Lead Classification
+  leadType        LeadType    @default(COLD)
+  status          LeadStatus  @default(NEW)
+  source          LeadSource  @default(OTHER)
+  
+  // Qualification Information
+  budget          Decimal?    @db.Decimal(12, 2)
+  currency        String?     @default("USD")
+  timeline        String?     // When they plan to purchase
+  decisionMaker   Boolean     @default(false)
+  painPoints      String[]    // Array of identified pain points
+  
+  // Interest and Intent
+  productInterest String[]    // Products/services they're interested in
+  urgencyLevel    Int         @default(1) // 1-10 scale
+  qualificationScore Decimal? @db.Decimal(3, 2) // 0-10 score
+  
+  // Communication
+  preferredContactMethod String? // email, phone, meeting
+  notes           String?
+  tags            String[]
+  
+  // Tracking
+  lastInteractionAt DateTime?
+  lastInteractionType String?
+  nextFollowUpAt  DateTime?
+  interactionCount Int        @default(0)
+  
+  // Conversion tracking
+  convertedAt     DateTime?   // When converted to opportunity
+  conversionValue Decimal?    @db.Decimal(12, 2)
+  
+  // Relations
+  company         Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId       String
+  
+  // Contact relationship (if lead came from existing contact)
+  contact         Contact?    @relation(fields: [contactId], references: [id])
+  contactId       String?
+  
+  // Owner/Assignment - CHANGED TO CompanyUser
+  assignedTo      CompanyUser? @relation("LeadAssignee", fields: [assignedToId], references: [id])
+  assignedToId    String?
+  
+  // Created by - CHANGED TO CompanyUser
+  createdBy       CompanyUser  @relation("LeadCreator", fields: [createdById], references: [id])
+  createdById     String
+  
+  // Custom field values
+  customFieldValues LeadFieldValue[]
+  
+  // Related entities
+  opportunity     Opportunity? // One-to-one when converted
+  activities      Activity[]
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@unique([companyId, email])
+  @@map("leads")
+}
+
+// Dynamic field values for leads
+model LeadFieldValue {
+  id            String      @id @default(cuid())
+  
+  // Relations
+  lead          Lead        @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  leadId        String
+  customField   CustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
+  customFieldId String
+  
+  // Value storage (polymorphic)
+  textValue     String?
+  numberValue   Decimal?    @db.Decimal(15, 4)
+  dateValue     DateTime?
+  booleanValue  Boolean?
+  jsonValue     Json?       // For complex data like arrays, objects
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  @@unique([leadId, customFieldId])
+  @@map("lead_field_values")
+}
+
+model Opportunity {
+  id              String           @id @default(cuid())
+  name            String           // Opportunity name/title
+  
+  // Value Information
+  value           Decimal          @db.Decimal(12, 2)
+  currency        String           @default("USD")
+  probability     Int              @default(50) // 0-100%
+  
+  // Timeline
+  expectedCloseDate DateTime?
+  actualCloseDate   DateTime?
+  
+  // Stage and Status
+  stage           OpportunityStage @default(NEW_QUALIFIED)
+  isActive        Boolean          @default(true)
+  
+  // Details
+  description     String?
+  competitorInfo  String?
+  lossReason      String?          // If lost, reason for loss
+  
+  // Relations
+  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId       String
+  
+  // Source lead (one-to-one relationship)
+  lead            Lead             @relation(fields: [leadId], references: [id])
+  leadId          String           @unique
+  
+  // Contact relationship
+  contact         Contact          @relation(fields: [contactId], references: [id])
+  contactId       String
+  
+  // Owner/Assignment - CHANGED TO CompanyUser
+  assignedTo      CompanyUser?     @relation("OpportunityAssignee", fields: [assignedToId], references: [id])
+  assignedToId    String?
+  
+  // Created by - CHANGED TO CompanyUser
+  createdBy       CompanyUser      @relation("OpportunityCreator", fields: [createdById], references: [id])
+  createdById     String
+  
+  // Related entities
+  activities      Activity[]
+  
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  
+  @@map("opportunities")
+}
+
+// ====================
+// BIZACCELERATOR\ENUMS MODELS
+// ====================
+
+enum ActivityStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ActivityType {
+  CALL
+  EMAIL
+  MEETING
+  TASK
+  NOTE
+  PROPOSAL_SENT
+  CONTRACT_SENT
+  FOLLOW_UP
+  DEMO
+  PRESENTATION
+  OTHER
+}
+
+enum ContactPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ContactStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+  ARCHIVED
+}
+
+enum ContactType {
+  INDIVIDUAL
+  COMPANY
+  VENDOR
+  PARTNER
+}
+
+enum LeadSource {
+  WEBSITE
+  SOCIAL_MEDIA
+  EMAIL_CAMPAIGN
+  COLD_CALL
+  REFERRAL
+  TRADE_SHOW
+  ADVERTISEMENT
+  PARTNER
+  ORGANIC_SEARCH
+  PAID_SEARCH
+  OTHER
+}
+
+enum LeadStatus {
+  NEW
+  QUALIFIED
+  FOLLOWUP
+  CONTACTED
+  QUALIFIED_OPPORTUNITY  // Goes to opportunity
+  NOT_QUALIFIED
+  ON_HOLD
+  LOST
+}
+
+enum LeadType {
+  QUERY
+  HOT
+  WARM
+  COLD
+}
+
+enum OpportunityStage {
+  NEW_QUALIFIED
+  DISCOVERY
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
 

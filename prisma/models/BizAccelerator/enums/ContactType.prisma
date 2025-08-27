@@ -1,0 +1,6 @@
+enum ContactType {
+  INDIVIDUAL
+  COMPANY
+  VENDOR
+  PARTNER
+}
