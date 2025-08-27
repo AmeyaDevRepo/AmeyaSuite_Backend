@@ -25,9 +25,9 @@ model AttendanceRecord {
   approvedAt  DateTime?
   
   // Relations
-  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee    Employee @relation("EmployeeAttendanceRecords", fields: [employeeId], references: [id], onDelete: Cascade)
   employeeId  String
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company     Company  @relation("CompanyAttendanceRecords", fields: [companyId], references: [id], onDelete: Cascade)
   companyId   String
   
   createdAt   DateTime @default(now())

@@ -1,45 +1,48 @@
 // Company/Tenant model for multi-tenancy
 model Company {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique // URL-friendly company identifier
-  domain      String?  @unique // Custom domain for the company
-  logo        String?  // Company logo URL
-  themeColor  String?  @default("#004aad") // Company theme color for UI customization
-  website     String?
-  phone       String?
-  email       String?
-  address     String?
-  city        String?
-  state       String?
-  country     String?
-  zipCode     String?
-  
-  // Subscription details
-  subscriptionPlan    String?   // Basic, Pro, Enterprise
-  subscriptionStatus  String    @default("TRIAL") // TRIAL, ACTIVE, SUSPENDED, CANCELLED
-  subscriptionEndsAt  DateTime?
-  maxUsers           Int       @default(10)
-  
-  // Settings
-  isActive    Boolean  @default(true)
-  settings    Json?    // Company-specific settings
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relations
-  companyUsers     CompanyUser[]
-  companyRoles     CompanyRole[]
-  departments      Department[]
-  employees        Employee[]
-  attendanceRecords AttendanceRecord[]
+  id         String  @id @default(cuid())
+  name       String
+  slug       String  @unique // URL-friendly company identifier
+  domain     String? @unique // Custom domain for the company
+  logo       String? // Company logo URL
+  themeColor String? @default("#004aad") // Company theme color for UI customization
+  website    String?
+  phone      String?
+  email      String?
+  address    String?
+  city       String?
+  state      String?
+  country    String?
+  zipCode    String?
 
-  contacts         Contact[]
-  leads            Lead[]
-  opportunities    Opportunity[]
-  activities       Activity[]
-  customFields     CustomField[]
-  
+  // Subscription details
+  subscriptionPlan   String? // Basic, Pro, Enterprise
+  subscriptionStatus String    @default("TRIAL") // TRIAL, ACTIVE, SUSPENDED, CANCELLED
+  subscriptionEndsAt DateTime?
+  maxUsers           Int       @default(10)
+
+  // Settings
+  isActive Boolean @default(true)
+  settings Json? // Company-specific settings
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  companyUsers CompanyUser[]
+  companyRoles CompanyRole[] @relation("CompaniesRoles")
+
+  // Business Relations
+  departments       Department[]       @relation("CompanyDepartments")
+  employees         Employee[]         @relation("CompanyEmployees")
+  attendanceRecords AttendanceRecord[] @relation("CompanyAttendanceRecords")
+
+  // CRM Relations
+  contacts      Contact[]     @relation("CompanyContacts")
+  leads         Lead[]        @relation("CompanyLeads")
+  opportunities Opportunity[] @relation("CompanyOpportunities")
+  activities    Activity[]    @relation("CompanyActivities")
+  customFields  CustomField[] @relation("CompanyCustomFields")
+
   @@map("companies")
 }

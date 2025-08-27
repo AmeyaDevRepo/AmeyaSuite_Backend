@@ -18,7 +18,7 @@ model CustomField {
   displayOrder Int      @default(0)
   
   // Relations
-  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company     Company   @relation("CompanyCustomFields", fields: [companyId], references: [id], onDelete: Cascade)
   companyId   String
   
   // Entity type this field belongs to

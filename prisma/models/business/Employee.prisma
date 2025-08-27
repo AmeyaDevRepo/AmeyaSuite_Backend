@@ -33,16 +33,16 @@ model Employee {
   directReports Employee[] @relation("EmployeeManager")
   
   // Relations
-  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company       Company  @relation("CompanyEmployees", fields: [companyId], references: [id], onDelete: Cascade)
   companyId     String
-  department    Department? @relation(fields: [departmentId], references: [id])
+  department    Department? @relation("DepartmentEmployees", fields: [departmentId], references: [id])
   departmentId  String?
-  companyUser   CompanyUser? @relation(fields: [companyUserId], references: [id])
   companyUserId String? @unique
+  companyUser   CompanyUser? @relation("EmployeeCompanyUser", fields: [companyUserId], references: [id])
   
   // Attendance and Leave
-  attendanceRecords AttendanceRecord[]
-  leaveRequests     LeaveRequest[]
+  attendanceRecords AttendanceRecord[] @relation("EmployeeAttendanceRecords")
+  leaveRequests     LeaveRequest[] @relation("EmployeeLeaveRequests")
   
   // Status
   status        EmployeeStatus @default(ACTIVE)

@@ -46,7 +46,7 @@ model Contact {
   interactionCount    Int     @default(0)
   
   // Relations
-  company       Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company       Company       @relation("CompanyContacts", fields: [companyId], references: [id], onDelete: Cascade)
   companyId     String
   
   // Owner/Assignment - CHANGED TO CompanyUser

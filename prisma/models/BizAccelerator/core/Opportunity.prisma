@@ -21,7 +21,7 @@ model Opportunity {
   lossReason      String?          // If lost, reason for loss
   
   // Relations
-  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company         Company          @relation("CompanyOpportunities", fields: [companyId], references: [id], onDelete: Cascade)
   companyId       String
   
   // Source lead (one-to-one relationship)

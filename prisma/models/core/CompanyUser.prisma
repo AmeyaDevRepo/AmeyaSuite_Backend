@@ -1,38 +1,43 @@
 // Many-to-many relationship between company users and companies
 model CompanyUser {
-  id        String   @id @default(cuid())
-  
-  // Relations
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId String
-  
-  // Status
-  status    CompanyUserStatus @default(PENDING)
-  isActive  Boolean  @default(true)
-  
-  // Invitation details
-  invitedBy String?  // User ID who invited this user
-  invitedAt DateTime @default(now())
-  joinedAt  DateTime?
-  
-  // Relations
-  roles     UserCompanyRole[]
-  employee  Employee? // Link to employee profile if applicable
+  id String @id @default(cuid())
 
-  assignedContacts     Contact[] @relation("ContactAssignee")
-  createdContacts      Contact[] @relation("ContactCreator")
-  assignedLeads        Lead[] @relation("LeadAssignee")
-  createdLeads         Lead[] @relation("LeadCreator")
+  // Relations
+  userId     String            @unique
+  user       User              @relation("UserCompanyUser",fields: [userId], references: [id])
+  companyId  String            @unique
+  company    Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  firstName  String?
+  middleName String?
+  lastName   String?
+  avatar     String?
+  // Status
+  status     CompanyUserStatus @default(PENDING)
+  isActive   Boolean           @default(true)
+
+  // Invitation details
+  invitedBy             String? // User ID who invited this user
+  invitedAt             DateTime      @default(now())
+  joinedAt              DateTime?
+  // Self-referential relation: users assigned to this user
+  assignedUsers         CompanyUser[] @relation("UserAssignments")
+  // The user this record is assigned to (optional)
+  assignedToId          String?
+  assignedTo            CompanyUser?  @relation("UserAssignments", fields: [assignedToId], references: [id])
+  assignedContacts      Contact[]     @relation("ContactAssignee")
+  createdContacts       Contact[]     @relation("ContactCreator")
+  assignedLeads         Lead[]        @relation("LeadAssignee")
+  createdLeads          Lead[]        @relation("LeadCreator")
   assignedOpportunities Opportunity[] @relation("OpportunityAssignee")
   createdOpportunities  Opportunity[] @relation("OpportunityCreator")
-  assignedActivities   Activity[] @relation("ActivityAssignee")
-  createdActivities    Activity[] @relation("ActivityCreator")
-  
+  assignedActivities    Activity[]    @relation("ActivityAssignee")
+  createdActivities     Activity[]    @relation("ActivityCreator")
+
+  // Back-reference (optional) from Employee side; Employee holds FK
+  employee Employee? @relation("EmployeeCompanyUser")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  @@unique([userId, companyId])
+
   @@map("company_users")
 }

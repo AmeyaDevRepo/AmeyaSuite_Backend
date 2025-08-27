@@ -14,7 +14,7 @@ model LeaveRequest {
   rejectionReason String?
   
   // Relations
-  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee    Employee @relation("EmployeeLeaveRequests", fields: [employeeId], references: [id], onDelete: Cascade)
   employeeId  String
   
   createdAt   DateTime @default(now())

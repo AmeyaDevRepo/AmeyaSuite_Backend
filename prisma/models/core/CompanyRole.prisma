@@ -1,22 +1,18 @@
 // Company-specific roles (dynamic roles created by companies)
 model CompanyRole {
-  id          String   @id @default(cuid())
-  name        String   // e.g., "Manager", "HR Lead", "Team Lead"
+  id          String  @id @default(cuid())
+  name        String  @unique// e.g., "Manager", "HR Lead", "Team Lead"
   description String?
-  isDefault   Boolean  @default(false) // Default role for new company users
-  isSystem    Boolean  @default(false) // System-created roles (ADMIN, EMPLOYEE)
-  color       String?  // Hex color for UI
-  
+  color       String? // Hex color for UI
+
   // Relations
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId   String
-  
-  userRoles   UserCompanyRole[]
-  permissions RolePermission[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  @@unique([companyId, name])
+  companyId String  @unique
+  company   Company @relation("CompaniesRoles", fields: [companyId], references: [id], onDelete: Cascade)
+
+  permissions String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@map("company_roles")
 }

@@ -14,9 +14,9 @@ model Department {
   headId      String?  // Employee ID who heads this department
   
   // Relations
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company     Company  @relation("CompanyDepartments", fields: [companyId], references: [id], onDelete: Cascade)
   companyId   String
-  employees   Employee[]
+  employees   Employee[] @relation("DepartmentEmployees")
   
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())

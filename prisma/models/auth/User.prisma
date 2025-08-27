@@ -1,40 +1,32 @@
 // User authentication model
 model User {
-  id       String   @id @default(cuid())
-  email    String   @unique
-  password String?  // Optional for OAuth users
-  
-  // Profile information
-  firstName String?
-  middleName String?
-  lastName  String?
-  avatar    String?
-  
+  id       String  @id @default(cuid())
+  email    String  @unique
+  password String? // Optional for OAuth users
+
   // Account status
-  isActive     Boolean @default(true)
-  emailVerified Boolean @default(false)
+  isActive        Boolean   @default(true)
+  emailVerified   Boolean   @default(false)
   emailVerifiedAt DateTime?
-  
+
   // Global role (for system administration)
   globalRole GlobalRole @default(USER)
-  
+
   // OAuth and external integrations
-  provider     String? // 'local', 'google', 'github', etc.
-  providerId   String? // External provider user ID
-  
+  provider   String? // 'local', 'google', 'github', etc.
+  providerId String? // External provider user ID
+
   // Security
-  lastLoginAt  DateTime?
-  passwordResetToken String?
-  passwordResetExpires DateTime?
+  lastLoginAt            DateTime?
+  passwordResetToken     String?
+  passwordResetExpires   DateTime?
   emailVerificationToken String?
-  
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  // Relations
-  profile      UserProfile?
-  companyUsers CompanyUser[]
-  
+
+  companyUser CompanyUser? @relation("UserCompanyUser")
+
   @@map("users")
 }

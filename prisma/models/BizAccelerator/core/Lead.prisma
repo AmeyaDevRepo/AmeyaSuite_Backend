@@ -47,7 +47,7 @@ model Lead {
   conversionValue Decimal?    @db.Decimal(12, 2)
   
   // Relations
-  company         Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company         Company     @relation("CompanyLeads", fields: [companyId], references: [id], onDelete: Cascade)
   companyId       String
   
   // Contact relationship (if lead came from existing contact)

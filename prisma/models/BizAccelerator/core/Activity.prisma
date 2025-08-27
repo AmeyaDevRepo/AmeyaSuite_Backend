@@ -17,7 +17,7 @@ model Activity {
   meetingLink     String?        // Video meeting link
   
   // Relations - polymorphic relationships
-  company         Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company         Company        @relation("CompanyActivities", fields: [companyId], references: [id], onDelete: Cascade)
   companyId       String
   
   // Related entities (optional - activity can be linked to any of these)

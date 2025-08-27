@@ -121,62 +121,35 @@ enum WorkLocation {
 
 // User authentication model
 model User {
-  id       String   @id @default(cuid())
-  email    String   @unique
-  password String?  // Optional for OAuth users
-  
-  // Profile information
-  firstName String?
-  middleName String?
-  lastName  String?
-  avatar    String?
-  
+  id       String  @id @default(cuid())
+  email    String  @unique
+  password String? // Optional for OAuth users
+
   // Account status
-  isActive     Boolean @default(true)
-  emailVerified Boolean @default(false)
+  isActive        Boolean   @default(true)
+  emailVerified   Boolean   @default(false)
   emailVerifiedAt DateTime?
-  
+
   // Global role (for system administration)
   globalRole GlobalRole @default(USER)
-  
+
   // OAuth and external integrations
-  provider     String? // 'local', 'google', 'github', etc.
-  providerId   String? // External provider user ID
-  
+  provider   String? // 'local', 'google', 'github', etc.
+  providerId String? // External provider user ID
+
   // Security
-  lastLoginAt  DateTime?
-  passwordResetToken String?
-  passwordResetExpires DateTime?
+  lastLoginAt            DateTime?
+  passwordResetToken     String?
+  passwordResetExpires   DateTime?
   emailVerificationToken String?
-  
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  // Relations
-  profile      UserProfile?
-  companyUsers CompanyUser[]
-  
+
+  companyUser CompanyUser? @relation("UserCompanyUser")
+
   @@map("users")
-}
-
-// Extended user profile information
-model UserProfile {
-  id          String   @id @default(cuid())
-  bio         String?
-  website     String?
-  location    String?
-  dateOfBirth DateTime?
-  phone       String?
-  
-  // Relations
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      String   @unique
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@map("user_profiles")
 }
 
 // ====================
@@ -185,109 +158,113 @@ model UserProfile {
 
 // Company/Tenant model for multi-tenancy
 model Company {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique // URL-friendly company identifier
-  domain      String?  @unique // Custom domain for the company
-  logo        String?  // Company logo URL
-  themeColor  String?  @default("#004aad") // Company theme color for UI customization
-  website     String?
-  phone       String?
-  email       String?
-  address     String?
-  city        String?
-  state       String?
-  country     String?
-  zipCode     String?
-  
-  // Subscription details
-  subscriptionPlan    String?   // Basic, Pro, Enterprise
-  subscriptionStatus  String    @default("TRIAL") // TRIAL, ACTIVE, SUSPENDED, CANCELLED
-  subscriptionEndsAt  DateTime?
-  maxUsers           Int       @default(10)
-  
-  // Settings
-  isActive    Boolean  @default(true)
-  settings    Json?    // Company-specific settings
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relations
-  companyUsers     CompanyUser[]
-  companyRoles     CompanyRole[]
-  departments      Department[]
-  employees        Employee[]
-  attendanceRecords AttendanceRecord[]
+  id         String  @id @default(cuid())
+  name       String
+  slug       String  @unique // URL-friendly company identifier
+  domain     String? @unique // Custom domain for the company
+  logo       String? // Company logo URL
+  themeColor String? @default("#004aad") // Company theme color for UI customization
+  website    String?
+  phone      String?
+  email      String?
+  address    String?
+  city       String?
+  state      String?
+  country    String?
+  zipCode    String?
 
-  contacts         Contact[]
-  leads            Lead[]
-  opportunities    Opportunity[]
-  activities       Activity[]
-  customFields     CustomField[]
-  
+  // Subscription details
+  subscriptionPlan   String? // Basic, Pro, Enterprise
+  subscriptionStatus String    @default("TRIAL") // TRIAL, ACTIVE, SUSPENDED, CANCELLED
+  subscriptionEndsAt DateTime?
+  maxUsers           Int       @default(10)
+
+  // Settings
+  isActive Boolean @default(true)
+  settings Json? // Company-specific settings
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  companyUsers CompanyUser[]
+  companyRoles CompanyRole[] @relation("CompaniesRoles")
+
+  // Business Relations
+  departments       Department[]       @relation("CompanyDepartments")
+  employees         Employee[]         @relation("CompanyEmployees")
+  attendanceRecords AttendanceRecord[] @relation("CompanyAttendanceRecords")
+
+  // CRM Relations
+  contacts      Contact[]     @relation("CompanyContacts")
+  leads         Lead[]        @relation("CompanyLeads")
+  opportunities Opportunity[] @relation("CompanyOpportunities")
+  activities    Activity[]    @relation("CompanyActivities")
+  customFields  CustomField[] @relation("CompanyCustomFields")
+
   @@map("companies")
 }
 
 // Company-specific roles (dynamic roles created by companies)
 model CompanyRole {
-  id          String   @id @default(cuid())
-  name        String   // e.g., "Manager", "HR Lead", "Team Lead"
+  id          String  @id @default(cuid())
+  name        String  @unique// e.g., "Manager", "HR Lead", "Team Lead"
   description String?
-  isDefault   Boolean  @default(false) // Default role for new company users
-  isSystem    Boolean  @default(false) // System-created roles (ADMIN, EMPLOYEE)
-  color       String?  // Hex color for UI
-  
+  color       String? // Hex color for UI
+
   // Relations
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId   String
-  
-  userRoles   UserCompanyRole[]
-  permissions RolePermission[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  @@unique([companyId, name])
+  companyId String  @unique
+  company   Company @relation("CompaniesRoles", fields: [companyId], references: [id], onDelete: Cascade)
+
+  permissions String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@map("company_roles")
 }
 
 // Many-to-many relationship between company users and companies
 model CompanyUser {
-  id        String   @id @default(cuid())
-  
-  // Relations
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId String
-  
-  // Status
-  status    CompanyUserStatus @default(PENDING)
-  isActive  Boolean  @default(true)
-  
-  // Invitation details
-  invitedBy String?  // User ID who invited this user
-  invitedAt DateTime @default(now())
-  joinedAt  DateTime?
-  
-  // Relations
-  roles     UserCompanyRole[]
-  employee  Employee? // Link to employee profile if applicable
+  id String @id @default(cuid())
 
-  assignedContacts     Contact[] @relation("ContactAssignee")
-  createdContacts      Contact[] @relation("ContactCreator")
-  assignedLeads        Lead[] @relation("LeadAssignee")
-  createdLeads         Lead[] @relation("LeadCreator")
+  // Relations
+  userId     String            @unique
+  user       User              @relation("UserCompanyUser",fields: [userId], references: [id])
+  companyId  String            @unique
+  company    Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  firstName  String?
+  middleName String?
+  lastName   String?
+  avatar     String?
+  // Status
+  status     CompanyUserStatus @default(PENDING)
+  isActive   Boolean           @default(true)
+
+  // Invitation details
+  invitedBy             String? // User ID who invited this user
+  invitedAt             DateTime      @default(now())
+  joinedAt              DateTime?
+  // Self-referential relation: users assigned to this user
+  assignedUsers         CompanyUser[] @relation("UserAssignments")
+  // The user this record is assigned to (optional)
+  assignedToId          String?
+  assignedTo            CompanyUser?  @relation("UserAssignments", fields: [assignedToId], references: [id])
+  assignedContacts      Contact[]     @relation("ContactAssignee")
+  createdContacts       Contact[]     @relation("ContactCreator")
+  assignedLeads         Lead[]        @relation("LeadAssignee")
+  createdLeads          Lead[]        @relation("LeadCreator")
   assignedOpportunities Opportunity[] @relation("OpportunityAssignee")
   createdOpportunities  Opportunity[] @relation("OpportunityCreator")
-  assignedActivities   Activity[] @relation("ActivityAssignee")
-  createdActivities    Activity[] @relation("ActivityCreator")
-  
+  assignedActivities    Activity[]    @relation("ActivityAssignee")
+  createdActivities     Activity[]    @relation("ActivityCreator")
+
+  // Back-reference (optional) from Employee side; Employee holds FK
+  employee Employee? @relation("EmployeeCompanyUser")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  @@unique([userId, companyId])
+
   @@map("company_users")
 }
 
@@ -311,7 +288,7 @@ model CustomField {
   displayOrder Int      @default(0)
   
   // Relations
-  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company     Company   @relation("CompanyCustomFields", fields: [companyId], references: [id], onDelete: Cascade)
   companyId   String
   
   // Entity type this field belongs to
@@ -326,61 +303,6 @@ model CustomField {
   
   @@unique([companyId, entityType, fieldKey])
   @@map("custom_fields")
-}
-
-// Permission system for granular access control
-model Permission {
-  id          String   @id @default(cuid())
-  name        String   @unique // e.g., "users.create", "employees.read", "attendance.manage"
-  module      String   // e.g., "users", "employees", "attendance", "dashboard"
-  action      String   // e.g., "create", "read", "update", "delete", "manage"
-  description String?
-  
-  // Relations
-  rolePermissions RolePermission[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  @@map("permissions")
-}
-
-// Role-Permission mapping for company roles
-model RolePermission {
-  id           String      @id @default(cuid())
-  
-  // Relations
-  companyRole  CompanyRole @relation(fields: [companyRoleId], references: [id], onDelete: Cascade)
-  companyRoleId String
-  permission   Permission  @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-  permissionId String
-  
-  createdAt    DateTime    @default(now())
-  
-  @@unique([companyRoleId, permissionId])
-  @@map("role_permissions")
-}
-
-// User roles within a company (many-to-many)
-model UserCompanyRole {
-  id        String   @id @default(cuid())
-  
-  // Relations
-  companyUser    CompanyUser @relation(fields: [companyUserId], references: [id], onDelete: Cascade)
-  companyUserId  String
-  companyRole    CompanyRole @relation(fields: [companyRoleId], references: [id], onDelete: Cascade)
-  companyRoleId  String
-  
-  // Assignment details
-  assignedBy String   // User ID who assigned this role
-  assignedAt DateTime @default(now())
-  expiresAt  DateTime? // Optional expiration date for temporary roles
-  
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  
-  @@unique([companyUserId, companyRoleId])
-  @@map("user_company_roles")
 }
 
 // ====================
@@ -414,9 +336,9 @@ model AttendanceRecord {
   approvedAt  DateTime?
   
   // Relations
-  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee    Employee @relation("EmployeeAttendanceRecords", fields: [employeeId], references: [id], onDelete: Cascade)
   employeeId  String
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company     Company  @relation("CompanyAttendanceRecords", fields: [companyId], references: [id], onDelete: Cascade)
   companyId   String
   
   createdAt   DateTime @default(now())
@@ -442,9 +364,9 @@ model Department {
   headId      String?  // Employee ID who heads this department
   
   // Relations
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company     Company  @relation("CompanyDepartments", fields: [companyId], references: [id], onDelete: Cascade)
   companyId   String
-  employees   Employee[]
+  employees   Employee[] @relation("DepartmentEmployees")
   
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -490,16 +412,16 @@ model Employee {
   directReports Employee[] @relation("EmployeeManager")
   
   // Relations
-  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company       Company  @relation("CompanyEmployees", fields: [companyId], references: [id], onDelete: Cascade)
   companyId     String
-  department    Department? @relation(fields: [departmentId], references: [id])
+  department    Department? @relation("DepartmentEmployees", fields: [departmentId], references: [id])
   departmentId  String?
-  companyUser   CompanyUser? @relation(fields: [companyUserId], references: [id])
   companyUserId String? @unique
+  companyUser   CompanyUser? @relation("EmployeeCompanyUser", fields: [companyUserId], references: [id])
   
   // Attendance and Leave
-  attendanceRecords AttendanceRecord[]
-  leaveRequests     LeaveRequest[]
+  attendanceRecords AttendanceRecord[] @relation("EmployeeAttendanceRecords")
+  leaveRequests     LeaveRequest[] @relation("EmployeeLeaveRequests")
   
   // Status
   status        EmployeeStatus @default(ACTIVE)
@@ -530,7 +452,7 @@ model LeaveRequest {
   rejectionReason String?
   
   // Relations
-  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee    Employee @relation("EmployeeLeaveRequests", fields: [employeeId], references: [id], onDelete: Cascade)
   employeeId  String
   
   createdAt   DateTime @default(now())
@@ -538,18 +460,6 @@ model LeaveRequest {
   
   @@map("leave_requests")
 }
-
-// ====================
-// ROOT MODELS
-// ====================
-
-
-
-
-
-
-
-
 
 // ====================
 // BIZACCELERATOR\CORE MODELS
@@ -574,7 +484,7 @@ model Activity {
   meetingLink     String?        // Video meeting link
   
   // Relations - polymorphic relationships
-  company         Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company         Company        @relation("CompanyActivities", fields: [companyId], references: [id], onDelete: Cascade)
   companyId       String
   
   // Related entities (optional - activity can be linked to any of these)
@@ -649,7 +559,7 @@ model Contact {
   interactionCount    Int     @default(0)
   
   // Relations
-  company       Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company       Company       @relation("CompanyContacts", fields: [companyId], references: [id], onDelete: Cascade)
   companyId     String
   
   // Owner/Assignment - CHANGED TO CompanyUser
@@ -748,7 +658,7 @@ model Lead {
   conversionValue Decimal?    @db.Decimal(12, 2)
   
   // Relations
-  company         Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company         Company     @relation("CompanyLeads", fields: [companyId], references: [id], onDelete: Cascade)
   companyId       String
   
   // Contact relationship (if lead came from existing contact)
@@ -824,7 +734,7 @@ model Opportunity {
   lossReason      String?          // If lost, reason for loss
   
   // Relations
-  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company         Company          @relation("CompanyOpportunities", fields: [companyId], references: [id], onDelete: Cascade)
   companyId       String
   
   // Source lead (one-to-one relationship)
