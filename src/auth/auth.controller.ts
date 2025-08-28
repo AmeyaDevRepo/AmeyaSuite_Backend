@@ -31,8 +31,8 @@ export class AuthController {
     if (!u) return null;
     // Provide a unified 'name' field for frontend (falls back gracefully)
     const name = u.firstName || u.lastName ? [u.firstName, u.lastName].filter(Boolean).join(' ') : (u.name || null);
-    const baseUser = { id: u.id, email: u.email, firstName: u.firstName, lastName: u.lastName, name };
-    
+    const baseUser = { id: u.id, email: u.email, firstName: u.firstName, lastName: u.lastName, name, themeColor: u.themeColor };
+
     if (companyData) {
       return {
         ...baseUser,

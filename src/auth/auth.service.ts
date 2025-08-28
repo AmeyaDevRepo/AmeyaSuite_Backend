@@ -172,7 +172,15 @@ export class AuthService {
             if (!user || !user.password) return null;
             const match = await bcrypt.compare(password, user.password);
             if (!match) return null;
-            return sanitizeUser(user);
+
+            // Fetch user's company (via companyUser) to get themeColor
+            const companyUser = await this.prisma.companyUser.findFirst({
+                where: { userId: user.id, isActive: true },
+                include: { company: true }
+            });
+            const themeColor = companyUser?.company?.themeColor;
+
+            return { ...sanitizeUser(user), themeColor };
         } catch (e: any) {
             this.logger.error('validateUser failed', e?.stack || e);
             // Fallback: if email is not actually unique in DB, use findFirst
@@ -181,7 +189,14 @@ export class AuthService {
                 if (!user || !user.password) return null;
                 const match = await bcrypt.compare(password, user.password);
                 if (!match) return null;
-                return sanitizeUser(user);
+
+                const companyUser = await this.prisma.companyUser.findFirst({
+                    where: { userId: user.id, isActive: true },
+                    include: { company: true }
+                });
+                const themeColor = companyUser?.company?.themeColor;
+
+                return { ...sanitizeUser(user), themeColor };
             } catch (inner) {
                 this.logger.error('Fallback validateUser failed', (inner as any)?.stack || inner);
                 return null;
