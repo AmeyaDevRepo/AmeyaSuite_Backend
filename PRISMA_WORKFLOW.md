@@ -22,6 +22,7 @@ This guide explains WHEN and WHAT commands to run for common Prisma + database t
 # 1. Edit or add a file in prisma/models/... e.g. prisma/models/core/Permission.prisma
 # 2. Rebuild schema.prisma from modular files
 node prisma/models-manager.js generate
+npx prisma migrate dev --name add-permissions
 
 # 3. (Optional) Format & validate schema
 npx prisma format
