@@ -55,7 +55,7 @@ model Lead {
   contactId       String?
 
   // Client relationship (one-to-one)
-  client          Client?     @relation("ClientLead")
+  client          Client?     @relation("ClientLead", fields: [clientId], references: [id])
   clientId        String?     @unique
   
   // Owner/Assignment - CHANGED TO CompanyUser

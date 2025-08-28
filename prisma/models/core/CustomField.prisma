@@ -30,6 +30,8 @@ model CustomField {
   // Relations to field values
   contactFieldValues ContactFieldValue[]
   leadFieldValues    LeadFieldValue[]
+  clientFieldValues  ClientFieldValue[]
+  dealFieldValues    DealFieldValue[]
   
   @@unique([companyId, entityType, fieldKey])
   @@map("custom_fields")

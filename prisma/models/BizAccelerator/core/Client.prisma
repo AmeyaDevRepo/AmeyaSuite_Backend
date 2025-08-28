@@ -12,8 +12,11 @@ model Client {
   
   // Relations to each stage (optional - client might not have all stages)
   contact         Contact?    @relation("ClientContact")
+  contactId       String?     @unique
   lead            Lead?       @relation("ClientLead") 
+  leadId          String?     @unique
   opportunity     Opportunity? @relation("ClientOpportunity")
+  opportunityId   String?     @unique
   
   // Multiple deals can be associated with a client (through opportunities)
   deals           Deal[]
