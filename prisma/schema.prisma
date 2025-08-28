@@ -196,6 +196,8 @@ model Company {
   opportunities Opportunity[] @relation("CompanyOpportunities")
   activities    Activity[]    @relation("CompanyActivities")
   customFields  CustomField[] @relation("CompanyCustomFields")
+  clients    Client[] @relation("CompanyClients")
+  deals      Deal[]   @relation("CompanyDeals")
 
   @@map("companies")
 }
@@ -251,6 +253,10 @@ model CompanyUser {
   createdLeads          Lead[]        @relation("LeadCreator")
   assignedOpportunities Opportunity[] @relation("OpportunityAssignee")
   createdOpportunities  Opportunity[] @relation("OpportunityCreator")
+  assignedClients       Client[] @relation("ClientAssignee")
+  createdClients        Client[] @relation("ClientCreator")
+  assignedDeals         Deal[]   @relation("DealAssignee")  
+  createdDeals          Deal[]   @relation("DealCreator")
   assignedActivities    Activity[]    @relation("ActivityAssignee")
   createdActivities     Activity[]    @relation("ActivityCreator")
 
@@ -292,6 +298,8 @@ model CustomField {
   // Relations to field values
   contactFieldValues ContactFieldValue[]
   leadFieldValues    LeadFieldValue[]
+  clientFieldValues  ClientFieldValue[]
+  dealFieldValues    DealFieldValue[]
   
   @@unique([companyId, entityType, fieldKey])
   @@map("custom_fields")
@@ -332,6 +340,14 @@ model Activity {
   
   opportunity     Opportunity?   @relation(fields: [opportunityId], references: [id])
   opportunityId   String?
+
+  // Client relationship for client-level activities
+  client          Client?        @relation("ClientActivities", fields: [clientId], references: [id])
+  clientId        String?
+  
+  // Deal relationship for deal-specific activities  
+  deal            Deal?          @relation("DealActivities", fields: [dealId], references: [id])
+  dealId          String?
   
   // Owner/Assignment - CHANGED TO CompanyUser
   assignedTo      CompanyUser?   @relation("ActivityAssignee", fields: [assignedToId], references: [id])
@@ -345,6 +361,75 @@ model Activity {
   updatedAt       DateTime       @updatedAt
   
   @@map("activities")
+}
+
+model Client {
+  id              String      @id @default(cuid())
+  
+  // Current stage in the lifecycle
+  currentStage    ClientStage @default(CONTACT_ONLY)
+  
+  // Basic unified information (pulled from current active record)
+  fullName        String
+  email           String?
+  phone           String?
+  companyName     String?
+  
+  // Relations to each stage (optional - client might not have all stages)
+  contact         Contact?    @relation("ClientContact")
+  contactId       String?     @unique
+  lead            Lead?       @relation("ClientLead") 
+  leadId          String?     @unique
+  opportunity     Opportunity? @relation("ClientOpportunity")
+  opportunityId   String?     @unique
+  
+  // Multiple deals can be associated with a client (through opportunities)
+  deals           Deal[]
+  
+  // Company relation
+  company         Company     @relation("CompanyClients", fields: [companyId], references: [id], onDelete: Cascade)
+  companyId       String
+  
+  // Ownership
+  assignedTo      CompanyUser? @relation("ClientAssignee", fields: [assignedToId], references: [id])
+  assignedToId    String?
+  createdBy       CompanyUser  @relation("ClientCreator", fields: [createdById], references: [id])
+  createdById     String
+  
+  // All activities across all stages
+  activities      Activity[]   @relation("ClientActivities")
+  
+  // Custom field values for clients
+  customFieldValues ClientFieldValue[]
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@unique([companyId, email])
+  @@map("clients")
+}
+
+model ClientFieldValue {
+  id            String      @id @default(cuid())
+  
+  // Relations
+  client        Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId      String
+  customField   CustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
+  customFieldId String
+  
+  // Value storage (polymorphic)
+  textValue     String?
+  numberValue   Decimal?    @db.Decimal(15, 4)
+  dateValue     DateTime?
+  booleanValue  Boolean?
+  jsonValue     Json?       // For complex data like arrays, objects
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  @@unique([clientId, customFieldId])
+  @@map("client_field_values")
 }
 
 model Contact {
@@ -413,6 +498,13 @@ model Contact {
   leads         Lead[]
   opportunities Opportunity[]
   activities    Activity[]
+
+  // Client relationship (one-to-one)
+  client        Client?       @relation("ClientContact", fields: [clientId], references: [id])
+  clientId      String?       @unique
+
+  deals         Deal[]
+
   
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -443,6 +535,85 @@ model ContactFieldValue {
   
   @@unique([contactId, customFieldId])
   @@map("contact_field_values")
+}
+
+model Deal {
+  id              String       @id @default(cuid())
+  title           String       // Deal name/title
+  description     String?
+  
+  // Deal value and terms
+  value           Decimal      @db.Decimal(12, 2)
+  currency        String       @default("USD")
+  
+  // Deal status and priority
+  status          DealStatus   @default(DRAFT)
+  priority        DealPriority @default(MEDIUM)
+  
+  // Timeline
+  expectedCloseDate DateTime?
+  actualCloseDate   DateTime?
+  
+  // Deal specific information
+  terms           String?      // Deal terms and conditions
+  notes           String?      // Internal notes
+  lossReason      String?      // If lost, reason for loss
+  
+  // Relations
+  company         Company      @relation("CompanyDeals", fields: [companyId], references: [id], onDelete: Cascade)
+  companyId       String
+  
+  // Client relationship (required)
+  client          Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId        String
+  
+  // Opportunity relationship (required - deals must come from opportunities)
+  opportunity     Opportunity  @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  opportunityId   String
+  
+  // Contact relationship (for easy access)
+  contact         Contact?     @relation(fields: [contactId], references: [id])
+  contactId       String?
+  
+  // Ownership
+  assignedTo      CompanyUser? @relation("DealAssignee", fields: [assignedToId], references: [id])
+  assignedToId    String?
+  createdBy       CompanyUser  @relation("DealCreator", fields: [createdById], references: [id])
+  createdById     String
+  
+  // Related activities
+  activities      Activity[]   @relation("DealActivities")
+  
+  // Custom field values for deals
+  customFieldValues DealFieldValue[]
+  
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  
+  @@map("deals")
+}
+
+model DealFieldValue {
+  id            String      @id @default(cuid())
+  
+  // Relations
+  deal          Deal        @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  dealId        String
+  customField   CustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
+  customFieldId String
+  
+  // Value storage (polymorphic)
+  textValue     String?
+  numberValue   Decimal?    @db.Decimal(15, 4)
+  dateValue     DateTime?
+  booleanValue  Boolean?
+  jsonValue     Json?       // For complex data like arrays, objects
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  @@unique([dealId, customFieldId])
+  @@map("deal_field_values")
 }
 
 model Lead {
@@ -500,6 +671,10 @@ model Lead {
   // Contact relationship (if lead came from existing contact)
   contact         Contact?    @relation(fields: [contactId], references: [id])
   contactId       String?
+
+  // Client relationship (one-to-one)
+  client          Client?     @relation("ClientLead", fields: [clientId], references: [id])
+  clientId        String?     @unique
   
   // Owner/Assignment - CHANGED TO CompanyUser
   assignedTo      CompanyUser? @relation("LeadAssignee", fields: [assignedToId], references: [id])
@@ -513,7 +688,7 @@ model Lead {
   customFieldValues LeadFieldValue[]
   
   // Related entities
-  opportunity     Opportunity? // One-to-one when converted
+  opportunity     Opportunity? @relation("LeadOpportunity") // One-to-one when converted
   activities      Activity[]
   
   createdAt       DateTime    @default(now())
@@ -574,12 +749,18 @@ model Opportunity {
   companyId       String
   
   // Source lead (one-to-one relationship)
-  lead            Lead             @relation(fields: [leadId], references: [id])
-  leadId          String           @unique
+  lead            Lead?            @relation("LeadOpportunity", fields: [leadId], references: [id])
+  leadId          String?          @unique
   
   // Contact relationship
   contact         Contact          @relation(fields: [contactId], references: [id])
   contactId       String
+
+  // Client relationship (one-to-one)  
+  client          Client?          @relation("ClientOpportunity", fields: [clientId], references: [id])
+  clientId        String?          @unique
+
+  deals           Deal[]
   
   // Owner/Assignment - CHANGED TO CompanyUser
   assignedTo      CompanyUser?     @relation("OpportunityAssignee", fields: [assignedToId], references: [id])
@@ -623,6 +804,12 @@ enum ActivityType {
   OTHER
 }
 
+enum ClientStage {
+  CONTACT_ONLY     // Just a contact, not actively pursued
+  LEAD            // Active lead being pursued  
+  OPPORTUNITY     // Qualified opportunity
+}
+
 enum ContactPriority {
   LOW
   MEDIUM
@@ -642,6 +829,22 @@ enum ContactType {
   COMPANY
   VENDOR
   PARTNER
+}
+
+enum DealPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum DealStatus {
+  DRAFT
+  ACTIVE
+  WON
+  LOST
+  ON_HOLD
+  CANCELLED
 }
 
 enum LeadSource {

@@ -26,14 +26,14 @@ model Opportunity {
   
   // Source lead (one-to-one relationship)
   lead            Lead?            @relation("LeadOpportunity", fields: [leadId], references: [id])
-  leadId          String?          // Remove @unique to allow multiple opportunities per lead if needed
+  leadId          String?          @unique
   
   // Contact relationship
   contact         Contact          @relation(fields: [contactId], references: [id])
   contactId       String
 
   // Client relationship (one-to-one)  
-  client          Client?          @relation("ClientOpportunity")
+  client          Client?          @relation("ClientOpportunity", fields: [clientId], references: [id])
   clientId        String?          @unique
 
   deals           Deal[]
