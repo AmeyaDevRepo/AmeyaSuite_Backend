@@ -32,11 +32,6 @@ model Company {
   companyUsers CompanyUser[]
   companyRoles CompanyRole[] @relation("CompaniesRoles")
 
-  // Business Relations
-  departments       Department[]       @relation("CompanyDepartments")
-  employees         Employee[]         @relation("CompanyEmployees")
-  attendanceRecords AttendanceRecord[] @relation("CompanyAttendanceRecords")
-
   // CRM Relations
   contacts      Contact[]     @relation("CompanyContacts")
   leads         Lead[]        @relation("CompanyLeads")

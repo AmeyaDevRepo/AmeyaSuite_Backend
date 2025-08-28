@@ -33,9 +33,6 @@ model CompanyUser {
   assignedActivities    Activity[]    @relation("ActivityAssignee")
   createdActivities     Activity[]    @relation("ActivityCreator")
 
-  // Back-reference (optional) from Employee side; Employee holds FK
-  employee Employee? @relation("EmployeeCompanyUser")
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

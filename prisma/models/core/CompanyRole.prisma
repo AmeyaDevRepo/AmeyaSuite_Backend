@@ -6,7 +6,7 @@ model CompanyRole {
   color       String? // Hex color for UI
 
   // Relations
-  companyId String  @unique
+  companyId String  
   company   Company @relation("CompaniesRoles", fields: [companyId], references: [id], onDelete: Cascade)
 
   permissions String[]
