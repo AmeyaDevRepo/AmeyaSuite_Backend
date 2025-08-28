@@ -6,7 +6,7 @@
   },
   "item": [
     {
-      "name": "Signup",
+      "name": "Company Signup",
       "request": {
         "method": "POST",
         "header": [
@@ -14,9 +14,9 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"email\": \"user2@example.com\",\n  \"password\": \"Password123!\",\n  \"firstName\": \"User\",\n  \"lastName\": \"Two\"\n}"
+          "raw": "{\n  \"email\": \"admin@newcompany.com\",\n  \"password\": \"Password123!\",\n  \"name\": \"John Admin\",\n  \"companyName\": \"New Tech Company\",\n  \"themeColor\": \"#004aad\",\n  \"phone\": \"+1 (555) 123-4567\",\n  \"companyEmail\": \"contact@newcompany.com\",\n  \"address\": \"123 Business Street\",\n  \"city\": \"New York\",\n  \"state\": \"NY\",\n  \"zipCode\": \"10001\"\n}"
         },
-        "url": {"raw": "{{baseUrl}}/auth/signup", "host": ["{{baseUrl}}"], "path": ["auth", "signup"]}
+        "url": {"raw": "{{baseUrl}}/auth/company-signup", "host": ["{{baseUrl}}"], "path": ["auth", "company-signup"]}
       },
       "response": []
     },
@@ -29,7 +29,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"email\": \"user2@example.com\",\n  \"password\": \"Password123!\"\n}"
+          "raw": "{\n  \"email\": \"admin@newcompany.com\",\n  \"password\": \"Password123!\"\n}"
         },
         "url": {"raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"]}
       },

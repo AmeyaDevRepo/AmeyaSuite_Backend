@@ -1,0 +1,103 @@
+{
+  "info": {
+    "name": "Auth Essential - AmeyaSuite Backend",
+    "description": "Essential authentication endpoints: company-signup, login, logout, me",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "auth-essential-2025"
+  },
+  "item": [
+    {
+      "name": "Company Signup",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@testcompany.com\",\n  \"password\": \"Password123!\",\n  \"name\": \"John Admin\",\n  \"companyName\": \"Test Company\",\n  \"themeColor\": \"#004aad\",\n  \"phone\": \"+1 (555) 123-4567\",\n  \"companyEmail\": \"contact@testcompany.com\",\n  \"address\": \"123 Business Street\",\n  \"city\": \"New York\",\n  \"state\": \"NY\",\n  \"zipCode\": \"10001\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/company-signup",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "company-signup"]
+        },
+        "description": "Create a new company with admin user. This endpoint creates both the company and the first admin user in a single transaction."
+      },
+      "response": []
+    },
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@testcompany.com\",\n  \"password\": \"Password123!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        },
+        "description": "Login with email and password. Creates a session cookie upon successful authentication."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Current User (Me)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"}
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/me",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "me"]
+        },
+        "description": "Get current authenticated user information. Requires valid session cookie."
+      },
+      "response": []
+    },
+    {
+      "name": "Logout",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"}
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/logout",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "logout"]
+        },
+        "description": "Logout current user. Destroys session and clears cookies."
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-set base URL if not already set",
+          "if (!pm.variables.get('baseUrl')) {",
+          "    pm.variables.set('baseUrl', 'http://localhost:8080');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "description": "Backend API base URL"
+    }
+  ]
+}

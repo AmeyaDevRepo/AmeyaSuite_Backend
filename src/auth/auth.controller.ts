@@ -2,7 +2,6 @@ import { Controller, Post, Body, Session, Get, HttpException, HttpStatus, Res, R
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 
-interface SignupDto { email: string; password: string; firstName?: string; lastName?: string; name?: string }
 interface LoginDto { email: string; password: string }
 
 interface CompanySignupDto {
@@ -94,43 +93,6 @@ export class AuthController {
         stack: (e?.stack ? e.stack.split('\n').slice(0,4).join('\n') : undefined)
       }, HttpStatus.INTERNAL_SERVER_ERROR);
     }
-  }
-
-  @Post('signup')
-  async signup(@Body() body: SignupDto, @Session() session: Record<string, any>, @Req() req: any) {
-    if (!body.email || !body.password) {
-      throw new HttpException('EMAIL_AND_PASSWORD_REQUIRED', HttpStatus.BAD_REQUEST);
-    }
-    try {
-  const raw = await this.authService.signup(body);
-  const serialized = this.serializeUser(raw);
-  session.userId = raw.id;
-  session.user = serialized;
-  req.user = serialized;
-  return { user: serialized };
-    } catch (e: any) {
-      if (e.message === 'EMAIL_IN_USE') {
-        throw new HttpException('EMAIL_IN_USE', HttpStatus.CONFLICT);
-      }
-      const isProd = process.env.NODE_ENV === 'production';
-      if (isProd) {
-        // Generic, safe response for production
-        throw new HttpException('INTERNAL_ERROR', HttpStatus.INTERNAL_SERVER_ERROR);
-      }
-      // Verbose response for development to aid debugging
-      throw new HttpException({
-        error: 'SIGNUP_FAILED',
-        message: e?.message || 'Unknown error',
-        detail: e?.code || undefined,
-        stack: (e?.stack ? e.stack.split('\n').slice(0,4).join('\n') : undefined)
-      }, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-  }
-
-  // Alias route for frontend expecting /auth/register
-  @Post('register')
-  async register(@Body() body: SignupDto, @Session() session: Record<string, any>, @Req() req: any) {
-    return this.signup(body, session, req);
   }
 
   @Post('login')

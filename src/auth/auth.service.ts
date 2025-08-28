@@ -90,22 +90,10 @@ export class AuthService {
                     }
                 });
 
-                // 3. Create default company roles (create only Admin role for now to avoid constraint issues)
+                // 3. Create default company roles
                 let adminRole, managerRole, userRole;
                 
                 try {
-                    // First, check if any roles already exist for this company
-                    const existingRoles = await tx.companyRole.findMany({
-                        where: { companyId: company.id }
-                    });
-                    
-                    if (existingRoles.length > 0) {
-                        // Clean up existing roles first
-                        await tx.companyRole.deleteMany({
-                            where: { companyId: company.id }
-                        });
-                    }
-                    
                     // Create Admin role
                     adminRole = await tx.companyRole.create({
                         data: {
@@ -141,7 +129,13 @@ export class AuthService {
                     
                 } catch (error: any) {
                     this.logger.error('Failed to create company roles', error);
-                    throw new Error(`ROLE_CREATION_FAILED: ${error.message || 'Unknown error'}`);
+                    
+                    // Check if it's a unique constraint violation
+                    if (error.code === 'P2002') {
+                        throw new Error(`ROLE_CREATION_FAILED: Role names must be unique within company. ${error.meta?.target || ''}`);
+                    }
+                    
+                    throw new Error(`ROLE_CREATION_FAILED: ${error.message || 'Unknown error creating roles'}`);
                 }
 
                 // 4. Create CompanyUser with Admin role for the creator
@@ -168,32 +162,6 @@ export class AuthService {
             return result;
         } catch (e: any) {
             this.logger.error('Company signup failed', e?.stack || e);
-            throw e;
-        }
-    }
-
-        async signup(data: { email: string; password: string; name?: string; firstName?: string; lastName?: string }) {
-        try {
-        const existing = await this.prisma.user.findUnique({ where: { email: data.email.toLowerCase() } });
-            if (existing) throw new Error('EMAIL_IN_USE');
-            const hash = await bcrypt.hash(data.password, this.saltRounds);
-                // Derive first/last name
-                let firstName = data.firstName;
-                let lastName = data.lastName;
-                if (!firstName && !lastName && data.name) {
-                    const parts = data.name.trim().split(/\s+/);
-                    firstName = parts.shift();
-                    lastName = parts.length ? parts.join(' ') : undefined;
-                }
-        const user = await this.prisma.user.create({
-            data: {
-                email: data.email.toLowerCase(),
-                password: hash,
-            }
-        });
-            return sanitizeUser(user);
-        } catch (e: any) {
-            this.logger.error('Signup failed', e?.stack || e);
             throw e;
         }
     }
