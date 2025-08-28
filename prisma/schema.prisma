@@ -169,6 +169,7 @@ model Company {
   email      String?
   address    String?
   city       String?
+  district   String?
   state      String?
   country    String?
   zipCode    String?
