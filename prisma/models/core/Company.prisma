@@ -38,6 +38,8 @@ model Company {
   opportunities Opportunity[] @relation("CompanyOpportunities")
   activities    Activity[]    @relation("CompanyActivities")
   customFields  CustomField[] @relation("CompanyCustomFields")
+  clients    Client[] @relation("CompanyClients")
+  deals      Deal[]   @relation("CompanyDeals")
 
   @@map("companies")
 }

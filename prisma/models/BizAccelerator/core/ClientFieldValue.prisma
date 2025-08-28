@@ -1,0 +1,22 @@
+model ClientFieldValue {
+  id            String      @id @default(cuid())
+  
+  // Relations
+  client        Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId      String
+  customField   CustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
+  customFieldId String
+  
+  // Value storage (polymorphic)
+  textValue     String?
+  numberValue   Decimal?    @db.Decimal(15, 4)
+  dateValue     DateTime?
+  booleanValue  Boolean?
+  jsonValue     Json?       // For complex data like arrays, objects
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  @@unique([clientId, customFieldId])
+  @@map("client_field_values")
+}

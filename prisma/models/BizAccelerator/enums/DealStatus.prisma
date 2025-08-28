@@ -1,0 +1,8 @@
+enum DealStatus {
+  DRAFT
+  ACTIVE
+  WON
+  LOST
+  ON_HOLD
+  CANCELLED
+}

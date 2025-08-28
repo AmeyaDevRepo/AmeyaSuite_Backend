@@ -25,12 +25,18 @@ model Opportunity {
   companyId       String
   
   // Source lead (one-to-one relationship)
-  lead            Lead             @relation(fields: [leadId], references: [id])
-  leadId          String           @unique
+  lead            Lead?            @relation("LeadOpportunity", fields: [leadId], references: [id])
+  leadId          String?          // Remove @unique to allow multiple opportunities per lead if needed
   
   // Contact relationship
   contact         Contact          @relation(fields: [contactId], references: [id])
   contactId       String
+
+  // Client relationship (one-to-one)  
+  client          Client?          @relation("ClientOpportunity")
+  clientId        String?          @unique
+
+  deals           Deal[]
   
   // Owner/Assignment - CHANGED TO CompanyUser
   assignedTo      CompanyUser?     @relation("OpportunityAssignee", fields: [assignedToId], references: [id])

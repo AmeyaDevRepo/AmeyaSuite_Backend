@@ -29,6 +29,14 @@ model Activity {
   
   opportunity     Opportunity?   @relation(fields: [opportunityId], references: [id])
   opportunityId   String?
+
+  // Client relationship for client-level activities
+  client          Client?        @relation("ClientActivities", fields: [clientId], references: [id])
+  clientId        String?
+  
+  // Deal relationship for deal-specific activities  
+  deal            Deal?          @relation("DealActivities", fields: [dealId], references: [id])
+  dealId          String?
   
   // Owner/Assignment - CHANGED TO CompanyUser
   assignedTo      CompanyUser?   @relation("ActivityAssignee", fields: [assignedToId], references: [id])
