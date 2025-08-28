@@ -64,6 +64,13 @@ model Contact {
   leads         Lead[]
   opportunities Opportunity[]
   activities    Activity[]
+
+  // Client relationship (one-to-one)
+  client        Client?       @relation("ClientContact")
+  clientId      String?       @unique
+
+  deals         Deal[]
+
   
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt

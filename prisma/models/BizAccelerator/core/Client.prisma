@@ -1,0 +1,42 @@
+model Client {
+  id              String      @id @default(cuid())
+  
+  // Current stage in the lifecycle
+  currentStage    ClientStage @default(CONTACT_ONLY)
+  
+  // Basic unified information (pulled from current active record)
+  fullName        String
+  email           String?
+  phone           String?
+  companyName     String?
+  
+  // Relations to each stage (optional - client might not have all stages)
+  contact         Contact?    @relation("ClientContact")
+  lead            Lead?       @relation("ClientLead") 
+  opportunity     Opportunity? @relation("ClientOpportunity")
+  
+  // Multiple deals can be associated with a client (through opportunities)
+  deals           Deal[]
+  
+  // Company relation
+  company         Company     @relation("CompanyClients", fields: [companyId], references: [id], onDelete: Cascade)
+  companyId       String
+  
+  // Ownership
+  assignedTo      CompanyUser? @relation("ClientAssignee", fields: [assignedToId], references: [id])
+  assignedToId    String?
+  createdBy       CompanyUser  @relation("ClientCreator", fields: [createdById], references: [id])
+  createdById     String
+  
+  // All activities across all stages
+  activities      Activity[]   @relation("ClientActivities")
+  
+  // Custom field values for clients
+  customFieldValues ClientFieldValue[]
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@unique([companyId, email])
+  @@map("clients")
+}

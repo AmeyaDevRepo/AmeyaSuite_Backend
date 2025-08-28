@@ -1,0 +1,6 @@
+enum DealPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}

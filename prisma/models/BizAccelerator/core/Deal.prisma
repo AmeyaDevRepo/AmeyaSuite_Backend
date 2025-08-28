@@ -1,0 +1,55 @@
+model Deal {
+  id              String       @id @default(cuid())
+  title           String       // Deal name/title
+  description     String?
+  
+  // Deal value and terms
+  value           Decimal      @db.Decimal(12, 2)
+  currency        String       @default("USD")
+  
+  // Deal status and priority
+  status          DealStatus   @default(DRAFT)
+  priority        DealPriority @default(MEDIUM)
+  
+  // Timeline
+  expectedCloseDate DateTime?
+  actualCloseDate   DateTime?
+  
+  // Deal specific information
+  terms           String?      // Deal terms and conditions
+  notes           String?      // Internal notes
+  lossReason      String?      // If lost, reason for loss
+  
+  // Relations
+  company         Company      @relation("CompanyDeals", fields: [companyId], references: [id], onDelete: Cascade)
+  companyId       String
+  
+  // Client relationship (required)
+  client          Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId        String
+  
+  // Opportunity relationship (required - deals must come from opportunities)
+  opportunity     Opportunity  @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  opportunityId   String
+  
+  // Contact relationship (for easy access)
+  contact         Contact?     @relation(fields: [contactId], references: [id])
+  contactId       String?
+  
+  // Ownership
+  assignedTo      CompanyUser? @relation("DealAssignee", fields: [assignedToId], references: [id])
+  assignedToId    String?
+  createdBy       CompanyUser  @relation("DealCreator", fields: [createdById], references: [id])
+  createdById     String
+  
+  // Related activities
+  activities      Activity[]   @relation("DealActivities")
+  
+  // Custom field values for deals
+  customFieldValues DealFieldValue[]
+  
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  
+  @@map("deals")
+}

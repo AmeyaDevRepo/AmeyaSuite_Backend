@@ -30,6 +30,10 @@ model CompanyUser {
   createdLeads          Lead[]        @relation("LeadCreator")
   assignedOpportunities Opportunity[] @relation("OpportunityAssignee")
   createdOpportunities  Opportunity[] @relation("OpportunityCreator")
+  assignedClients       Client[] @relation("ClientAssignee")
+  createdClients        Client[] @relation("ClientCreator")
+  assignedDeals         Deal[]   @relation("DealAssignee")  
+  createdDeals          Deal[]   @relation("DealCreator")
   assignedActivities    Activity[]    @relation("ActivityAssignee")
   createdActivities     Activity[]    @relation("ActivityCreator")
 

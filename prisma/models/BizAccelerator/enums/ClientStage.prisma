@@ -1,0 +1,5 @@
+enum ClientStage {
+  CONTACT_ONLY     // Just a contact, not actively pursued
+  LEAD            // Active lead being pursued  
+  OPPORTUNITY     // Qualified opportunity
+}

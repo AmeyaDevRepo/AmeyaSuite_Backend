@@ -1,0 +1,22 @@
+model DealFieldValue {
+  id            String      @id @default(cuid())
+  
+  // Relations
+  deal          Deal        @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  dealId        String
+  customField   CustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
+  customFieldId String
+  
+  // Value storage (polymorphic)
+  textValue     String?
+  numberValue   Decimal?    @db.Decimal(15, 4)
+  dateValue     DateTime?
+  booleanValue  Boolean?
+  jsonValue     Json?       // For complex data like arrays, objects
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  @@unique([dealId, customFieldId])
+  @@map("deal_field_values")
+}
